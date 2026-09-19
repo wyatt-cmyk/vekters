@@ -1,26 +1,29 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Design tokens from CLAUDE.md. Tailwind 4 turns each --color-* into utility
+   classes, e.g. bg-surface, text-muted, border-line, bg-school-fill. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-bg: #f3f1eb;
+  --color-surface: #ffffff;
+  --color-ink: #1c1f24;
+  --color-muted: #5a5f66;
+  --color-line: #ddd9cf;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-school: #2f4e8c;
+  --color-school-fill: #e7ecf6;
+  --color-sports: #2a5f3e;
+  --color-sports-fill: #e3f0e7;
+
+  --color-warn: #6b3a08;
+  --color-warn-fill: #fbefd9;
+  --color-warn-line: #e9c98f;
+
+  --font-sans: var(--font-source-sans), sans-serif;
+  --font-heading: var(--font-barlow), sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
 }

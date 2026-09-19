@@ -1,69 +1,177 @@
-import Image from "next/image";
+// Home page (a server component: it runs on the server, so the access token
+// never reaches the browser).
+//
+// Signed out  -> show a "Sign in with Google" button.
+// Signed in   -> list the user's calendars and their events for the next 7 days.
 
-export default function Home() {
+import { auth, signIn, signOut } from "@/auth";
+import { listCalendars, listUpcomingEvents, type CalendarEvent } from "@/lib/google-calendar";
+
+export default async function HomePage() {
+  const session = await auth();
+
+  // No session, or the refresh token stopped working: ask them to sign in.
+  if (!session?.accessToken || session.error) {
+    return <SignInScreen expired={session?.error === "RefreshTokenError"} />;
+  }
+
+  let calendars, events;
+  try {
+    calendars = await listCalendars(session.accessToken);
+    events = await listUpcomingEvents(session.accessToken, calendars);
+  } catch (err) {
+    return (
+      <Page userName={session.user?.name}>
+        <Notice>
+          Couldn&apos;t load your calendar. {err instanceof Error ? err.message : String(err)}
+        </Notice>
+      </Page>
+    );
+  }
+
+  // Use the primary calendar's time zone so times match what the user sees in Google.
+  const timeZone = calendars.find((c) => c.primary)?.timeZone ?? "UTC";
+  const eventsByDay = groupByDay(events, timeZone);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <Page userName={session.user?.name}>
+      <section className="mb-8">
+        <h2 className="font-heading text-2xl font-bold uppercase tracking-wide">Your calendars</h2>
+        <ul className="mt-3 divide-y divide-line rounded-lg border border-line bg-surface">
+          {calendars.map((cal) => (
+            <li key={cal.id} className="flex min-h-11 items-center gap-3 px-4 py-2">
+              <span
+                className="inline-block size-3 rounded-full"
+                style={{ backgroundColor: cal.backgroundColor ?? "#999" }}
+              />
+              <span className="font-semibold">{cal.summary}</span>
+              {cal.primary && <span className="text-sm text-muted">(primary)</span>}
+              <span className="ml-auto text-sm text-muted">{cal.accessRole}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section>
+        <h2 className="font-heading text-2xl font-bold uppercase tracking-wide">Next 7 days</h2>
+        <p className="text-sm text-muted">
+          {events.length} events · times shown in {timeZone}
+        </p>
+
+        {events.length === 0 && <Notice>No events in the next 7 days.</Notice>}
+
+        {[...eventsByDay.entries()].map(([dayLabel, dayEvents]) => (
+          <div key={dayLabel} className="mt-5">
+            <h3 className="font-heading text-lg font-semibold uppercase text-muted">{dayLabel}</h3>
+            <ul className="mt-2 space-y-2">
+              {dayEvents.map((event) => (
+                <li
+                  key={`${event.calendarId}-${event.id}`}
+                  className="flex min-h-11 flex-wrap items-baseline gap-x-3 rounded-lg border border-line bg-surface px-4 py-2"
+                >
+                  <span className="font-heading w-28 shrink-0 text-base font-semibold tabular-nums">
+                    {formatTime(event, timeZone)}
+                  </span>
+                  <span className={`font-semibold ${event.status === "cancelled" ? "line-through text-muted" : ""}`}>
+                    {event.summary ?? "(no title)"}
+                  </span>
+                  <span className="text-sm text-muted">{event.calendarName}</span>
+                  {event.location && <span className="w-full text-sm text-muted">{event.location}</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </section>
+    </Page>
   );
+}
+
+/* ---------- small pieces used above ---------- */
+
+// Shared frame: header with app name, user name and sign-out.
+function Page({ userName, children }: { userName?: string | null; children: React.ReactNode }) {
+  return (
+    <main className="mx-auto w-full max-w-3xl px-4 py-6">
+      <header className="mb-8 flex items-center justify-between border-b border-line pb-4">
+        <h1 className="font-heading text-3xl font-bold uppercase tracking-wide">Athlete Calendar</h1>
+        <div className="flex items-center gap-3">
+          {userName && <span className="text-sm text-muted">{userName}</span>}
+          {/* Server action: runs signOut on the server when the form is submitted. */}
+          <form
+            action={async () => {
+              "use server";
+              await signOut();
+            }}
+          >
+            <button className="min-h-11 rounded-md border border-line bg-surface px-4 font-semibold hover:bg-bg">
+              Sign out
+            </button>
+          </form>
+        </div>
+      </header>
+      {children}
+    </main>
+  );
+}
+
+function SignInScreen({ expired }: { expired: boolean }) {
+  return (
+    <main className="flex flex-1 flex-col items-center justify-center gap-6 px-4 text-center">
+      <h1 className="font-heading text-5xl font-bold uppercase tracking-wide">Athlete Calendar</h1>
+      <p className="max-w-md text-muted">
+        School and sports in one place. Sign in with the Google account your school calendar is on.
+      </p>
+      {expired && <Notice>Your Google session expired. Please sign in again.</Notice>}
+      <form
+        action={async () => {
+          "use server";
+          await signIn("google");
+        }}
+      >
+        <button className="min-h-11 rounded-md bg-ink px-6 font-semibold text-white hover:opacity-90">
+          Sign in with Google
+        </button>
+      </form>
+    </main>
+  );
+}
+
+function Notice({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mt-4 rounded-md border border-warn-line bg-warn-fill px-4 py-3 text-warn">{children}</p>
+  );
+}
+
+/* ---------- date helpers ---------- */
+
+// Turns a flat list of events into a Map of "Thu, Sep 18" -> [events on that day].
+// A Map keeps insertion order, and the events are already sorted, so days come out in order.
+function groupByDay(events: CalendarEvent[], timeZone: string) {
+  const groups = new Map<string, CalendarEvent[]>();
+  for (const event of events) {
+    const label = formatDay(event, timeZone);
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label)!.push(event);
+  }
+  return groups;
+}
+
+function formatDay(event: CalendarEvent, timeZone: string) {
+  if (event.start.date) {
+    // All-day event: "2026-09-20" has no time zone, so read it as a plain date.
+    const [y, m, d] = event.start.date.split("-").map(Number);
+    return new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric" }).format(
+      new Date(y, m - 1, d),
+    );
+  }
+  return new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short", month: "short", day: "numeric" }).format(
+    new Date(event.start.dateTime!),
+  );
+}
+
+function formatTime(event: CalendarEvent, timeZone: string) {
+  if (event.start.date) return "All day";
+  const fmt = new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", minute: "2-digit" });
+  return `${fmt.format(new Date(event.start.dateTime!))} – ${fmt.format(new Date(event.end.dateTime!))}`;
 }
