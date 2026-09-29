@@ -54,34 +54,41 @@ export async function listCalendars(accessToken: string): Promise<Calendar[]> {
   return data.items ?? [];
 }
 
-// Fetches events from every calendar for the next `days` days and merges them
-// into one list sorted by start time.
-export async function listUpcomingEvents(
+// Fetches events between timeMin and timeMax (ISO strings) from every calendar
+// and merges them into one list sorted by start time.
+export async function listEvents(
   accessToken: string,
   calendars: Calendar[],
-  days = 7,
+  timeMin: string,
+  timeMax: string,
 ): Promise<CalendarEvent[]> {
-  const now = new Date();
-  const later = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+  // "freeBusyReader" calendars only share busy/free blocks, not event details.
+  const readable = calendars.filter((cal) => cal.accessRole !== "freeBusyReader");
 
   const perCalendar = await Promise.all(
-    calendars.map(async (cal) => {
-      const data = await googleGet<{ items?: Omit<CalendarEvent, "calendarId" | "calendarName">[] }>(
-        accessToken,
-        `/calendars/${encodeURIComponent(cal.id)}/events`,
-        {
-          timeMin: now.toISOString(),
-          timeMax: later.toISOString(),
-          singleEvents: "true", // expand repeating events into individual ones
-          orderBy: "startTime",
-          maxResults: "100",
-        },
-      );
-      return (data.items ?? []).map((event) => ({
-        ...event,
-        calendarId: cal.id,
-        calendarName: cal.summary,
-      }));
+    readable.map(async (cal) => {
+      try {
+        const data = await googleGet<{ items?: Omit<CalendarEvent, "calendarId" | "calendarName">[] }>(
+          accessToken,
+          `/calendars/${encodeURIComponent(cal.id)}/events`,
+          {
+            timeMin,
+            timeMax,
+            singleEvents: "true", // expand repeating events into individual ones
+            orderBy: "startTime",
+            maxResults: "250",
+          },
+        );
+        return (data.items ?? []).map((event) => ({
+          ...event,
+          calendarId: cal.id,
+          calendarName: cal.summary,
+        }));
+      } catch (err) {
+        // One broken calendar shouldn't hide all the others.
+        console.error(`Skipping calendar "${cal.summary}":`, err);
+        return [];
+      }
     }),
   );
 

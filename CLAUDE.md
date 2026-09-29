@@ -18,6 +18,7 @@ High school student athletes juggling classes, practices, games, and travel. Our
 
 ## Rules
 - Build ONE milestone at a time. Don't start the next milestone until the current one works.
+  Exception: while Google setup is pending, it's OK to build on demo mode (sample data), as long as the demo data has the exact same shape as real Google Calendar data.
 - API keys stay server-side only. Never expose them to the browser. Secrets live in `.env.local`, which is never committed.
 - The AI never changes the calendar on its own. Every create, update, or cancel shows a confirmation card, and only writes to Google Calendar after the user taps Confirm.
 - Cancelled events are marked as cancelled, not deleted.
@@ -73,6 +74,16 @@ Layout notes:
 ## Project layout (kept up to date as we build)
 - `auth.ts` — Auth.js config: Google provider, calendar scopes, token refresh.
 - `app/api/auth/[...nextauth]/route.ts` — the sign-in/sign-out endpoints Auth.js needs.
-- `lib/google-calendar.ts` — small server-only helpers that call the Google Calendar REST API.
-- `app/page.tsx` — home page: sign-in button, or calendars + next-7-days events when signed in.
+- `app/page.tsx` — week view: week navigation (`?week=`), School/Sports/Other filter chips (`?hide=`), 7-column grid.
+- `app/calendars/page.tsx` — tag each Google calendar as School, Sports, or Other.
+- `app/actions.ts` — server actions (saving calendar tags).
+- `components/` — header, week grid + event cards, sign-in screen, notice box.
+- `lib/calendar-data.ts` — decides demo vs. real Google data; pages only call `loadWeek()` / `loadCalendars()`.
+- `lib/google-calendar.ts` — server-only helpers that call the Google Calendar REST API.
+- `lib/demo-data.ts` — sample calendars and events in Google's format.
+- `lib/week.ts` — date helpers. Days are plain "YYYY-MM-DD" strings; weeks start Monday.
+- `lib/tags.ts` — calendar tags, stored in a cookie (per browser, no database yet), with name-based guesses.
 - `.env.local` — secrets (never committed). See `.env.local.example` and `SETUP.md`.
+
+## Demo mode
+On automatically when `AUTH_GOOGLE_ID` or `AUTH_GOOGLE_SECRET` is empty, or when `DEMO_MODE=true`. Skips sign-in and shows sample data.

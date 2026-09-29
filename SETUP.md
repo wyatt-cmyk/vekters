@@ -2,6 +2,8 @@
 
 You need to do this once. It takes about 10 minutes.
 
+Until you do, the app runs in **demo mode**: it skips sign-in and shows sample events so you can keep building. Demo mode turns off by itself once `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` are filled in.
+
 ## 1. Create a Google Cloud project
 1. Go to https://console.cloud.google.com and sign in with your Google account.
 2. Click the project dropdown at the top → **New Project**.
