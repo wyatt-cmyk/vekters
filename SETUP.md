@@ -54,8 +54,21 @@ Open http://localhost:3000 → **Sign in with Google**.
 - Approve the calendar permissions.
 - You should land back on the app with your calendars and your next 7 days of events, including Toddle events.
 
+## Anthropic API key (for the AI chat)
+The chat works in demo mode too, but it needs this key either way.
+1. Go to https://console.anthropic.com and sign in (or create an account).
+2. Add credits under **Billing**. Each chat message costs a small amount. Set a monthly spend limit under **Limits** so there are no surprises.
+3. Go to **API keys → Create key**. Name it `Athlete Calendar (local)` and copy it. You only see it once.
+4. Paste it into `.env.local`:
+   ```
+   ANTHROPIC_API_KEY=sk-ant-...
+   ```
+5. Stop the dev server (Ctrl+C) and run `npm run dev` again. Next.js only reads `.env.local` when it starts.
+
+Never paste this key into chat, code, or a commit. It stays in `.env.local` on the server only.
+
 ## When you deploy to Vercel (Milestone 7)
-Add a second redirect URI to the same OAuth client: `https://<your-app>.vercel.app/api/auth/callback/google`, and set the same three env vars in the Vercel project settings.
+Add a second redirect URI to the same OAuth client: `https://<your-app>.vercel.app/api/auth/callback/google`, and set the env vars (`AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `ANTHROPIC_API_KEY`) in the Vercel project settings. Don't deploy with demo mode on: in demo mode the chat has no sign-in, so anyone with the link could use your Anthropic credits.
 
 ## Common errors
 | Error | Fix |

@@ -29,17 +29,22 @@ export type CalendarEvent = {
   calendarName: string;
 };
 
-// One generic GET helper so every call handles auth and errors the same way.
-async function googleGet<T>(
+// One helper for every call, so auth and errors are handled the same way.
+async function googleRequest<T>(
   accessToken: string,
   path: string,
-  params: Record<string, string> = {},
+  options: { params?: Record<string, string>; method?: "GET" | "POST"; body?: unknown } = {},
 ): Promise<T> {
   const url = new URL(BASE_URL + path);
-  url.search = new URLSearchParams(params).toString();
+  url.search = new URLSearchParams(options.params ?? {}).toString();
 
   const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    method: options.method ?? "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
     cache: "no-store", // always fetch fresh calendar data
   });
 
@@ -48,6 +53,9 @@ async function googleGet<T>(
   }
   return res.json();
 }
+
+const googleGet = <T>(accessToken: string, path: string, params: Record<string, string> = {}) =>
+  googleRequest<T>(accessToken, path, { params });
 
 export async function listCalendars(accessToken: string): Promise<Calendar[]> {
   const data = await googleGet<{ items?: Calendar[] }>(accessToken, "/users/me/calendarList");
@@ -98,4 +106,26 @@ export async function listEvents(
 // ISO strings sort correctly as plain text, so this is enough for ordering.
 function startOf(event: CalendarEvent) {
   return event.start.dateTime ?? event.start.date ?? "";
+}
+
+export type NewEvent = {
+  summary: string;
+  location?: string;
+  description?: string;
+  start: EventTime;
+  end: EventTime;
+};
+
+// Adds an event to one calendar. Only ever called after the user taps Confirm.
+export async function insertEvent(accessToken: string, calendarId: string, event: NewEvent) {
+  return googleRequest<{ id: string; htmlLink: string }>(
+    accessToken,
+    `/calendars/${encodeURIComponent(calendarId)}/events`,
+    { method: "POST", body: event },
+  );
+}
+
+// Calendars the user is allowed to add events to.
+export function canWrite(calendar: Calendar) {
+  return calendar.accessRole === "owner" || calendar.accessRole === "writer";
 }

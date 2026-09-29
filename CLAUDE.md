@@ -76,9 +76,15 @@ Layout notes:
 - `app/api/auth/[...nextauth]/route.ts` — the sign-in/sign-out endpoints Auth.js needs.
 - `app/page.tsx` — week view: week navigation (`?week=`), School/Sports/Other filter chips (`?hide=`), 7-column grid.
 - `app/calendars/page.tsx` — tag each Google calendar as School, Sports, or Other.
-- `app/actions.ts` — server actions (saving calendar tags).
+- `app/actions.ts` — server actions: saving calendar tags, and `confirmProposal` (the ONLY code that writes events).
+- `app/api/chat/route.ts` — POST endpoint for the AI chat; checks input and sign-in, runs the AI on the server.
+- `components/chat-panel.tsx` — the chat panel (client component) with confirmation cards.
+- `lib/ai/chat.ts` — the agent loop: calls Claude (`claude-opus-5`), runs tools, collects proposals.
+- `lib/ai/tools.ts` — tool definitions (`find_events`, `create_event`).
+- `lib/ai/system-prompt.ts` — Claude's rules, plus today's date, time zone, and writable calendars.
+- `lib/proposals.ts` — the `EventProposal` type, validation, and conversion to Google's event format.
 - `components/` — header, week grid + event cards, sign-in screen, notice box.
-- `lib/calendar-data.ts` — decides demo vs. real Google data; pages only call `loadWeek()` / `loadCalendars()`.
+- `lib/calendar-data.ts` — decides demo vs. real Google data, for reading (`loadWeek`, `getEventsBetween`) and writing (`createEventFromProposal`).
 - `lib/google-calendar.ts` — server-only helpers that call the Google Calendar REST API.
 - `lib/demo-data.ts` — sample calendars and events in Google's format.
 - `lib/week.ts` — date helpers. Days are plain "YYYY-MM-DD" strings; weeks start Monday.
@@ -86,4 +92,9 @@ Layout notes:
 - `.env.local` — secrets (never committed). See `.env.local.example` and `SETUP.md`.
 
 ## Demo mode
-On automatically when `AUTH_GOOGLE_ID` or `AUTH_GOOGLE_SECRET` is empty, or when `DEMO_MODE=true`. Skips sign-in and shows sample data.
+On automatically when `AUTH_GOOGLE_ID` or `AUTH_GOOGLE_SECRET` is empty, or when `DEMO_MODE=true`. Skips sign-in and shows sample data. Events confirmed from the chat are kept in server memory and disappear on restart. Never deploy with demo mode on: the chat endpoint has no sign-in then.
+
+## AI chat status (Milestone 3)
+- Done: create only. Claude calls `find_events` (read-only, runs automatically) and `create_event` (only makes a confirmation card). Confirm calls `confirmProposal`.
+- Not yet: `update_event` and `cancel_event`. For "moved"/"cancelled" messages Claude finds the event and says editing is coming soon, instead of creating a duplicate.
+- The server keeps no chat state: the browser sends the conversation history back each time. Never edit old history; only append.

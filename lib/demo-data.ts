@@ -72,8 +72,18 @@ export function demoEventsForWeek(monday: DayKey): CalendarEvent[] {
   return events;
 }
 
+// Events "added" in demo mode are kept in the server's memory, so they vanish
+// when the dev server restarts. globalThis keeps one shared list even when
+// Next.js reloads this file during development.
+const memory = globalThis as unknown as { demoAddedEvents?: CalendarEvent[] };
+
+export function demoAddedEvents(): CalendarEvent[] {
+  return (memory.demoAddedEvents ??= []);
+}
+
+
 // "2026-09-28" + "15:30" -> exact ISO time, using this computer's time zone.
-function localIso(day: DayKey, time: string) {
+export function localIso(day: DayKey, time: string) {
   const [y, m, d] = day.split("-").map(Number);
   const [hh, mm] = time.split(":").map(Number);
   return new Date(y, m - 1, d, hh, mm).toISOString();

@@ -52,15 +52,19 @@ export function weekDays(monday: DayKey): DayKey[] {
   return Array.from({ length: 7 }, (_, i) => addDays(monday, i));
 }
 
-// The exact time range to ask Google for. It's padded by half a day on each
-// side so it covers the whole week in any time zone; extra events outside the
-// week are dropped when we group events by day.
-export function fetchRangeForWeek(monday: DayKey) {
+// The exact time range to ask Google for, covering the days from `firstDay` up to
+// (not including) `dayAfterLast`. It's padded by 14 hours on each side so it
+// covers those days in any time zone; extra events are dropped later.
+export function fetchRange(firstDay: DayKey, dayAfterLast: DayKey) {
   const hour = 60 * 60 * 1000;
   return {
-    timeMin: new Date(toUtcDate(monday).getTime() - 14 * hour).toISOString(),
-    timeMax: new Date(toUtcDate(addDays(monday, 7)).getTime() + 14 * hour).toISOString(),
+    timeMin: new Date(toUtcDate(firstDay).getTime() - 14 * hour).toISOString(),
+    timeMax: new Date(toUtcDate(dayAfterLast).getTime() + 14 * hour).toISOString(),
   };
+}
+
+export function fetchRangeForWeek(monday: DayKey) {
+  return fetchRange(monday, addDays(monday, 7));
 }
 
 // Which days an event appears on. Timed events show on their start day.
@@ -121,4 +125,21 @@ export function formatEventTime(event: CalendarEvent, timeZone: string) {
   const period = / ?[AP]M$/;
   const samePeriod = start.match(period)?.[0].trim() === end.match(period)?.[0].trim();
   return `${samePeriod ? start.replace(period, "") : start} – ${end}`;
+}
+
+// "Sep 30"
+export function formatMonthDay(day: DayKey) {
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(toUtcDate(day));
+}
+
+// "Wednesday"
+export function formatLongWeekday(day: DayKey) {
+  return new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "UTC" }).format(toUtcDate(day));
+}
+
+// An exact time as the user's local clock, e.g. "2026-09-30 15:30". Used when
+// describing events to the AI.
+export function toLocalDateTime(instant: Date, timeZone: string) {
+  const time = new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(instant);
+  return `${toDayKey(instant, timeZone)} ${time}`;
 }

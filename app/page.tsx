@@ -7,6 +7,7 @@
 
 import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
+import { ChatPanel } from "@/components/chat-panel";
 import { Notice } from "@/components/notice";
 import { SignInScreen } from "@/components/sign-in-screen";
 import { WeekGrid } from "@/components/week-grid";
@@ -50,55 +51,60 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
 
   const isThisWeek = days.includes(data.today);
 
+  // On wide screens (1280px+, like a Chromebook): week on the left, chat on the right, each scrolling on its own.
+  // On narrower screens: chat on top, then the week.
   return (
-    <>
+    <div className="flex flex-1 flex-col xl:h-dvh">
       {header}
-      <main className="flex flex-1 flex-col gap-3 p-4">
-        {/* Toolbar: week navigation on the left, filter chips on the right. */}
-        <div className="flex flex-wrap items-center gap-2">
-          <NavLink href={weekHref(addDays(data.monday, -7), hidden)} label="Previous week">
-            ‹
-          </NavLink>
-          <NavLink href={weekHref(addDays(data.monday, 7), hidden)} label="Next week">
-            ›
-          </NavLink>
-          <h1 className="font-heading px-2 text-2xl font-bold uppercase tracking-wide">
-            {formatWeekRange(data.monday)}
-          </h1>
-          {!isThisWeek && (
-            <Link
-              href={weekHref(undefined, hidden)}
-              className="flex min-h-11 items-center rounded-md border border-line bg-surface px-4 font-semibold hover:bg-bg"
-            >
-              This week
-            </Link>
+      <div className="flex min-h-0 flex-1 flex-col xl:flex-row">
+        <main className="flex min-w-0 flex-1 flex-col gap-3 p-4 xl:overflow-y-auto">
+          {/* Toolbar: week navigation on the left, filter chips on the right. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <NavLink href={weekHref(addDays(data.monday, -7), hidden)} label="Previous week">
+              ‹
+            </NavLink>
+            <NavLink href={weekHref(addDays(data.monday, 7), hidden)} label="Next week">
+              ›
+            </NavLink>
+            <h1 className="font-heading px-2 text-2xl font-bold uppercase tracking-wide">
+              {formatWeekRange(data.monday)}
+            </h1>
+            {!isThisWeek && (
+              <Link
+                href={weekHref(undefined, hidden)}
+                className="flex min-h-11 items-center rounded-md border border-line bg-surface px-4 font-semibold hover:bg-bg"
+              >
+                This week
+              </Link>
+            )}
+
+            <div className="ml-auto flex flex-wrap gap-2" aria-label="Show or hide calendars">
+              {chipTags.map((tag) => (
+                <FilterChip key={tag} tag={tag} monday={data.monday} hidden={hidden} />
+              ))}
+            </div>
+          </div>
+
+          {data.mode === "demo" && (
+            <Notice>
+              <strong>Demo mode:</strong> you&apos;re looking at sample events. Add your Google keys to{" "}
+              <code>.env.local</code> (see SETUP.md) to see your real calendar.
+            </Notice>
           )}
 
-          <div className="ml-auto flex flex-wrap gap-2" aria-label="Show or hide calendars">
-            {chipTags.map((tag) => (
-              <FilterChip key={tag} tag={tag} monday={data.monday} hidden={hidden} />
-            ))}
-          </div>
-        </div>
+          <WeekGrid days={days} eventsByDay={eventsByDay} tagOf={tagOf} today={data.today} timeZone={data.timeZone} />
 
-        {data.mode === "demo" && (
-          <Notice>
-            <strong>Demo mode:</strong> you&apos;re looking at sample events. Add your Google keys to{" "}
-            <code>.env.local</code> (see SETUP.md) to see your real calendar.
-          </Notice>
-        )}
-
-        <WeekGrid days={days} eventsByDay={eventsByDay} tagOf={tagOf} today={data.today} timeZone={data.timeZone} />
-
-        <p className="text-sm text-muted">
-          Times shown in {data.timeZone}. Colors wrong?{" "}
-          <Link href="/calendars" className="font-semibold text-ink underline">
-            Tag your calendars
-          </Link>
-          .
-        </p>
-      </main>
-    </>
+          <p className="text-sm text-muted">
+            Times shown in {data.timeZone}. Colors wrong?{" "}
+            <Link href="/calendars" className="font-semibold text-ink underline">
+              Tag your calendars
+            </Link>
+            .
+          </p>
+        </main>
+        <ChatPanel />
+      </div>
+    </div>
   );
 }
 

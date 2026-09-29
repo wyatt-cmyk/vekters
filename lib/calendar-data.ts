@@ -1,13 +1,21 @@
 // One place that decides where calendar data comes from:
 //   - demo mode  -> sample data from demo-data.ts
 //   - otherwise  -> the signed-in user's real Google Calendar
-// Pages call loadWeek() or loadCalendars() and don't care which one it is.
+// Pages, the AI chat, and the Confirm button all go through here, so none of
+// them need to care which one it is.
 import "server-only";
 
 import { auth } from "@/auth";
-import { DEMO_CALENDARS, DEMO_TIME_ZONE, demoEventsForWeek } from "./demo-data";
-import { listCalendars, listEvents, type Calendar, type CalendarEvent } from "./google-calendar";
-import { fetchRangeForWeek, isDayKey, startOfWeek, todayIn, type DayKey } from "./week";
+import { DEMO_CALENDARS, DEMO_TIME_ZONE, demoAddedEvents, demoEventsForWeek, localIso } from "./demo-data";
+import {
+  insertEvent,
+  listCalendars,
+  listEvents,
+  type Calendar,
+  type CalendarEvent,
+} from "./google-calendar";
+import { proposalDescription, proposalTimes, type EventProposal } from "./proposals";
+import { addDays, eventDays, fetchRange, isDayKey, startOfWeek, todayIn, type DayKey } from "./week";
 
 // Demo mode is on when the Google keys are missing, or when DEMO_MODE=true.
 export function isDemoMode() {
@@ -16,18 +24,21 @@ export function isDemoMode() {
 
 type Mode = "demo" | "google";
 
-export type CalendarsResult =
-  | { status: "signed-out"; expired: boolean }
-  | { status: "error"; mode: Mode; userName?: string | null; message: string }
-  | { status: "ok"; mode: Mode; userName?: string | null; timeZone: string; calendars: Calendar[] };
+// Everything needed to read or write the user's calendar.
+export type Source = {
+  mode: Mode;
+  timeZone: string;
+  calendars: Calendar[];
+  userName?: string | null;
+  accessToken?: string; // only in google mode
+};
 
-export type WeekResult =
-  | Exclude<CalendarsResult, { status: "ok" }>
-  | (Extract<CalendarsResult, { status: "ok" }> & { monday: DayKey; today: DayKey; events: CalendarEvent[] });
+export type SignedOut = { status: "signed-out"; expired: boolean };
 
-export async function loadCalendars(): Promise<CalendarsResult> {
+// Returns the data source, or SignedOut. Throws if Google returns an error.
+export async function getSource(): Promise<Source | SignedOut> {
   if (isDemoMode()) {
-    return { status: "ok", mode: "demo", userName: "Demo student", timeZone: DEMO_TIME_ZONE, calendars: DEMO_CALENDARS };
+    return { mode: "demo", timeZone: DEMO_TIME_ZONE, calendars: DEMO_CALENDARS, userName: "Demo student" };
   }
 
   const session = await auth();
@@ -35,36 +46,95 @@ export async function loadCalendars(): Promise<CalendarsResult> {
     return { status: "signed-out", expired: session?.error === "RefreshTokenError" };
   }
 
+  const calendars = await listCalendars(session.accessToken);
+  // The primary calendar's time zone is the one the user set in Google.
+  const timeZone = calendars.find((c) => c.primary)?.timeZone ?? "UTC";
+  return { mode: "google", timeZone, calendars, userName: session.user?.name, accessToken: session.accessToken };
+}
+
+export function isSignedOut(value: Source | SignedOut): value is SignedOut {
+  return "status" in value;
+}
+
+/* ---------- reading ---------- */
+
+// All events from `firstDay` through `lastDay` (both included), sorted by start.
+export async function getEventsBetween(source: Source, firstDay: DayKey, lastDay: DayKey): Promise<CalendarEvent[]> {
+  let events: CalendarEvent[];
+
+  if (source.mode === "demo") {
+    // Demo data is generated one week at a time, plus anything added via the chat.
+    events = [...demoAddedEvents()];
+    for (let monday = startOfWeek(firstDay); monday <= lastDay; monday = addDays(monday, 7)) {
+      events.push(...demoEventsForWeek(monday));
+    }
+  } else {
+    const { timeMin, timeMax } = fetchRange(firstDay, addDays(lastDay, 1));
+    events = await listEvents(source.accessToken!, source.calendars, timeMin, timeMax);
+  }
+
+  // Keep only events that touch the requested days.
+  return events
+    .filter((e) => eventDays(e, source.timeZone).some((day) => day >= firstDay && day <= lastDay))
+    .sort((a, b) => (a.start.dateTime ?? a.start.date ?? "").localeCompare(b.start.dateTime ?? b.start.date ?? ""));
+}
+
+type Loaded<T> = SignedOut | { status: "error"; mode: Mode; userName?: string | null; message: string } | ({ status: "ok" } & T);
+
+export type CalendarsResult = Loaded<Source>;
+export type WeekResult = Loaded<Source & { monday: DayKey; today: DayKey; events: CalendarEvent[] }>;
+
+export async function loadCalendars(): Promise<CalendarsResult> {
   try {
-    const calendars = await listCalendars(session.accessToken);
-    // The primary calendar's time zone is the one the user set in Google.
-    const timeZone = calendars.find((c) => c.primary)?.timeZone ?? "UTC";
-    return { status: "ok", mode: "google", userName: session.user?.name, timeZone, calendars };
+    const source = await getSource();
+    return isSignedOut(source) ? source : { status: "ok", ...source };
   } catch (err) {
-    return { status: "error", mode: "google", userName: session.user?.name, message: errorMessage(err) };
+    return { status: "error", mode: isDemoMode() ? "demo" : "google", message: errorMessage(err) };
   }
 }
 
 // `requestedWeek` is any date in the week (from the URL). Missing or invalid -> this week.
 export async function loadWeek(requestedWeek?: string): Promise<WeekResult> {
-  const base = await loadCalendars();
-  if (base.status !== "ok") return base;
-
-  const today = todayIn(base.timeZone);
-  const monday = startOfWeek(isDayKey(requestedWeek) ? requestedWeek : today);
-
-  if (base.mode === "demo") {
-    return { ...base, today, monday, events: demoEventsForWeek(monday) };
-  }
-
   try {
-    const session = await auth();
-    const { timeMin, timeMax } = fetchRangeForWeek(monday);
-    const events = await listEvents(session!.accessToken!, base.calendars, timeMin, timeMax);
-    return { ...base, today, monday, events };
+    const source = await getSource();
+    if (isSignedOut(source)) return source;
+
+    const today = todayIn(source.timeZone);
+    const monday = startOfWeek(isDayKey(requestedWeek) ? requestedWeek : today);
+    const events = await getEventsBetween(source, monday, addDays(monday, 6));
+    return { status: "ok", ...source, today, monday, events };
   } catch (err) {
-    return { status: "error", mode: base.mode, userName: base.userName, message: errorMessage(err) };
+    return { status: "error", mode: isDemoMode() ? "demo" : "google", message: errorMessage(err) };
   }
+}
+
+/* ---------- writing (only after the user taps Confirm) ---------- */
+
+export async function createEventFromProposal(source: Source, p: EventProposal) {
+  const { start, end } = proposalTimes(p, source.timeZone);
+
+  if (source.mode === "google") {
+    await insertEvent(source.accessToken!, p.calendarId, {
+      summary: p.title,
+      location: p.location || undefined,
+      description: proposalDescription(p),
+      start,
+      end,
+    });
+    return;
+  }
+
+  // Demo mode: keep it in memory, shaped like a Google event.
+  demoAddedEvents().push({
+    id: p.id,
+    summary: p.title,
+    location: p.location || undefined,
+    status: "confirmed",
+    start: p.allDay ? start : { dateTime: localIso(p.date, p.startTime) },
+    end: p.allDay ? end : { dateTime: localIso(end.dateTime!.slice(0, 10), p.endTime) },
+    calendarId: p.calendarId,
+    calendarName: p.calendarName,
+  });
 }
 
 function errorMessage(err: unknown) {
