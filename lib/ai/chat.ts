@@ -9,9 +9,10 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { Source } from "../calendar-data";
 import { getEventsBetween } from "../calendar-data";
 import { canWrite, type Calendar } from "../google-calendar";
-import { addHours, checkProposal, isTime, type EventProposal } from "../proposals";
+import type { EventProposal } from "../proposals";
 import { tagsForCalendars, type Tag } from "../tags";
 import { addDays, formatLongWeekday, isDayKey, todayIn, toLocalDateTime } from "../week";
+import { buildProposal } from "./build-proposal";
 import { buildContext, RULES } from "./system-prompt";
 import { TOOLS } from "./tools";
 
@@ -151,28 +152,7 @@ async function runTool(
     }
 
     if (toolUse.name === "create_event") {
-      const calendar = ctx.writable.find((c) => c.id === input.calendar_id);
-      const allDay = input.all_day === true;
-      const startTime = allDay ? "" : String(input.start_time ?? "");
-      const endGiven = !allDay && isTime(input.end_time);
-
-      const proposal: EventProposal = {
-        id: crypto.randomUUID(),
-        calendarId: String(input.calendar_id ?? ""),
-        calendarName: calendar?.summary ?? "",
-        tag: ctx.tagOf.get(String(input.calendar_id)) ?? "other",
-        title: String(input.title ?? "").trim(),
-        date: String(input.date ?? ""),
-        allDay,
-        startTime,
-        // Rule from CLAUDE.md: no end time -> default to 2 hours and flag it.
-        endTime: allDay ? "" : endGiven ? String(input.end_time) : isTime(startTime) ? addHours(startTime, 2) : "",
-        endTimeDefaulted: !allDay && !endGiven,
-        location: String(input.location ?? "").trim(),
-        notes: String(input.notes ?? "").trim(),
-      };
-
-      const problem = checkProposal(proposal, ctx.writable.map((c) => c.id));
+      const { proposal, problem } = buildProposal(input, ctx.writable, ctx.tagOf);
       if (problem) return result(`Not proposed: ${problem}`, true);
 
       ctx.proposals.push(proposal);

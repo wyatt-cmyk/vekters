@@ -76,11 +76,17 @@ Layout notes:
 - `app/api/auth/[...nextauth]/route.ts` — the sign-in/sign-out endpoints Auth.js needs.
 - `app/page.tsx` — week view: week navigation (`?week=`), School/Sports/Other filter chips (`?hide=`), 7-column grid.
 - `app/calendars/page.tsx` — tag each Google calendar as School, Sports, or Other.
-- `app/actions.ts` — server actions: saving calendar tags, and `confirmProposal` (the ONLY code that writes events).
+- `app/actions.ts` — server actions: saving calendar tags, `confirmProposal` and `confirmImport` (the ONLY code that writes events).
 - `app/api/chat/route.ts` — POST endpoint for the AI chat; checks input and sign-in, runs the AI on the server.
 - `components/chat-panel.tsx` — the chat panel (client component) with confirmation cards.
+- `app/import/page.tsx` + `components/import-flow.tsx` — schedule import: input, review checklist, done.
+- `app/api/import/route.ts` — POST endpoint: takes text or a PDF/image (max 4 MB) and returns review rows.
+- `lib/ai/import.ts` — asks Claude for all events as JSON (structured output), then `reviewEvents` adds warnings.
+- `lib/ai/build-proposal.ts` — turns Claude's event fields into an `EventProposal`; shared by chat and import.
+- `lib/ai/errors.ts` — turns Anthropic API errors into friendly messages.
+- `lib/duplicates.ts` — rule-based duplicate detection (same day + matching title).
 - `lib/ai/chat.ts` — the agent loop: calls Claude (`claude-opus-5`), runs tools, collects proposals.
-- `lib/ai/tools.ts` — tool definitions (`find_events`, `create_event`).
+- `lib/ai/tools.ts` — tool definitions (`find_events`, `create_event`) and the shared `EVENT_FIELDS` schema.
 - `lib/ai/system-prompt.ts` — Claude's rules, plus today's date, time zone, and writable calendars.
 - `lib/proposals.ts` — the `EventProposal` type, validation, and conversion to Google's event format.
 - `components/` — header, week grid + event cards, sign-in screen, notice box.
@@ -98,3 +104,9 @@ On automatically when `AUTH_GOOGLE_ID` or `AUTH_GOOGLE_SECRET` is empty, or when
 - Done: create only. Claude calls `find_events` (read-only, runs automatically) and `create_event` (only makes a confirmation card). Confirm calls `confirmProposal`.
 - Not yet: `update_event` and `cancel_event`. For "moved"/"cancelled" messages Claude finds the event and says editing is coming soon, instead of creating a duplicate.
 - The server keeps no chat state: the browser sends the conversation history back each time. Never edit old history; only append.
+
+## Schedule import status (Milestone 4)
+- Paste text or upload a PDF/PNG/JPG/WebP/GIF (4 MB max, Vercel's request limit is 4.5 MB). Up to 100 events per import; repeating events are expanded.
+- Review rows start unchecked when: likely duplicate of an existing event, listed twice, date in the past, or invalid (invalid rows can't be checked).
+- Warnings shown: missing details from the AI, end time defaulted to 2 hours, past date, duplicates. The calendar can be changed per row.
+- Not yet: editing a row's title/date/time before adding.

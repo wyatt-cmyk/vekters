@@ -76,18 +76,28 @@ export async function listEvents(
   const perCalendar = await Promise.all(
     readable.map(async (cal) => {
       try {
-        const data = await googleGet<{ items?: Omit<CalendarEvent, "calendarId" | "calendarName">[] }>(
-          accessToken,
-          `/calendars/${encodeURIComponent(cal.id)}/events`,
-          {
-            timeMin,
-            timeMax,
-            singleEvents: "true", // expand repeating events into individual ones
-            orderBy: "startTime",
-            maxResults: "250",
-          },
-        );
-        return (data.items ?? []).map((event) => ({
+        // Google returns at most 250 events per "page". Long ranges (like a
+        // whole season) can need several pages, so keep asking until done.
+        const items: Omit<CalendarEvent, "calendarId" | "calendarName">[] = [];
+        let pageToken: string | undefined;
+        for (let page = 0; page < 10; page++) {
+          const data = await googleGet<{ items?: typeof items; nextPageToken?: string }>(
+            accessToken,
+            `/calendars/${encodeURIComponent(cal.id)}/events`,
+            {
+              timeMin,
+              timeMax,
+              singleEvents: "true", // expand repeating events into individual ones
+              orderBy: "startTime",
+              maxResults: "250",
+              ...(pageToken ? { pageToken } : {}),
+            },
+          );
+          items.push(...(data.items ?? []));
+          pageToken = data.nextPageToken;
+          if (!pageToken) break;
+        }
+        return items.map((event) => ({
           ...event,
           calendarId: cal.id,
           calendarName: cal.summary,

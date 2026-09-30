@@ -46,3 +46,42 @@ export async function confirmProposal(proposal: EventProposal): Promise<{ ok: tr
     return { ok: false, error: "Couldn't add the event. Try again." };
   }
 }
+
+export type ImportOutcome = { id: string; ok: boolean; error?: string };
+
+// Called by "Add selected" on the import review list. Adds each checked event.
+export async function confirmImport(proposals: EventProposal[]): Promise<{ results: ImportOutcome[] } | { error: string }> {
+  if (!Array.isArray(proposals) || proposals.length === 0 || proposals.length > 100) {
+    return { error: "Choose between 1 and 100 events." };
+  }
+
+  let source;
+  try {
+    source = await getSource();
+  } catch {
+    return { error: "Couldn't reach your calendar. Try again." };
+  }
+  if (isSignedOut(source)) return { error: "Please sign in again." };
+
+  const writableIds = source.calendars.filter(canWrite).map((c) => c.id);
+  const results: ImportOutcome[] = [];
+
+  // One at a time, so one failure doesn't stop the rest and we can report each.
+  for (const p of proposals) {
+    try {
+      const problem = checkProposal(p, writableIds);
+      if (problem) {
+        results.push({ id: String(p.id), ok: false, error: problem });
+        continue;
+      }
+      await createEventFromProposal(source, p);
+      results.push({ id: p.id, ok: true });
+    } catch (err) {
+      console.error("Import add failed:", err);
+      results.push({ id: String(p?.id), ok: false, error: "Couldn't add this one." });
+    }
+  }
+
+  refresh();
+  return { results };
+}

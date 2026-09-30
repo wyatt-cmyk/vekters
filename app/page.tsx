@@ -83,6 +83,12 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
                 <FilterChip key={tag} tag={tag} monday={data.monday} hidden={hidden} />
               ))}
             </div>
+            <Link
+              href="/import"
+              className="flex min-h-11 items-center rounded-md bg-ink px-5 font-semibold text-white hover:opacity-90"
+            >
+              Import
+            </Link>
           </div>
 
           {data.mode === "demo" && (

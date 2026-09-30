@@ -7,6 +7,24 @@
 
 import type Anthropic from "@anthropic-ai/sdk";
 
+// The fields that describe one event. Shared by the chat's create_event tool
+// and the schedule import, so both produce exactly the same kind of proposal.
+export const EVENT_FIELDS = {
+  calendar_id: { type: "string", description: "id of one of the writable calendars listed in the system prompt." },
+  title: { type: "string", description: 'Short event name, e.g. "Practice" or "Game vs. Lincoln High".' },
+  date: { type: "string", description: "Day of the event, as YYYY-MM-DD." },
+  all_day: { type: "boolean", description: "true for things without a time, like an assignment due date." },
+  start_time: { type: "string", description: 'Local start time as 24-hour HH:MM, e.g. "16:30". Empty string if all_day.' },
+  end_time: {
+    type: "string",
+    description:
+      "Local end time as 24-hour HH:MM. Empty string if the message doesn't say; the app then uses 2 hours and flags it.",
+  },
+  location: { type: "string", description: "Where it is, or empty string." },
+  notes: { type: "string", description: 'Useful extra details from the message (e.g. "wear dark jerseys"), or empty string.' },
+};
+export const EVENT_FIELD_NAMES = Object.keys(EVENT_FIELDS);
+
 export const TOOLS: Anthropic.Beta.BetaTool[] = [
   {
     name: "find_events",
@@ -34,20 +52,9 @@ export const TOOLS: Anthropic.Beta.BetaTool[] = [
     input_schema: {
       type: "object",
       properties: {
-        calendar_id: { type: "string", description: "id of one of the writable calendars listed in the system prompt." },
-        title: { type: "string", description: 'Short event name, e.g. "Practice" or "Game vs. Lincoln High".' },
-        date: { type: "string", description: "Day of the event, as YYYY-MM-DD." },
-        all_day: { type: "boolean", description: "true for things without a time, like an assignment due date." },
-        start_time: { type: "string", description: 'Local start time as 24-hour HH:MM, e.g. "16:30". Empty string if all_day.' },
-        end_time: {
-          type: "string",
-          description:
-            "Local end time as 24-hour HH:MM. Empty string if the message doesn't say; the app then uses 2 hours and flags it.",
-        },
-        location: { type: "string", description: "Where it is, or empty string." },
-        notes: { type: "string", description: 'Useful extra details from the message (e.g. "wear dark jerseys"), or empty string.' },
+        ...EVENT_FIELDS,
       },
-      required: ["calendar_id", "title", "date", "all_day", "start_time", "end_time", "location", "notes"],
+      required: EVENT_FIELD_NAMES,
       additionalProperties: false,
     },
   },
