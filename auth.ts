@@ -14,13 +14,14 @@ import type { JWT } from "next-auth/jwt";
 
 // The permissions we ask for. openid/email/profile are the basics for sign-in.
 // The two calendar scopes are the ones from CLAUDE.md.
-const SCOPES = [
-  "openid",
-  "email",
-  "profile",
-  "https://www.googleapis.com/auth/calendar.events",
-  "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
-].join(" ");
+// The two calendar permissions the app can't work without. Google lets people
+// untick permissions on the consent screen, so we check what we actually got.
+export const REQUIRED_SCOPES = {
+  "https://www.googleapis.com/auth/calendar.events": "See and add your calendar events",
+  "https://www.googleapis.com/auth/calendar.calendarlist.readonly": "See the list of your calendars",
+};
+
+const SCOPES = ["openid", "email", "profile", ...Object.keys(REQUIRED_SCOPES)].join(" ");
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -48,6 +49,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           accessToken: account.access_token,
           refreshToken: account.refresh_token,
           expiresAt: account.expires_at, // seconds since 1970
+          // A space-separated list of what the student agreed to.
+          scope: account.scope,
         };
       }
 
@@ -65,6 +68,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       session.accessToken = token.accessToken;
       session.error = token.error;
+      session.missingScopes = missingScopes(token.scope);
       return session;
     },
   },
@@ -102,4 +106,15 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
     refreshToken: data.refresh_token ?? token.refreshToken,
     error: undefined,
   };
+}
+
+// Which required permissions the student didn't grant. Empty means all good.
+// A full-access "calendar" permission covers both, so it counts too.
+export function missingScopes(granted?: string): string[] {
+  if (!granted) return [];
+  const list = granted.split(" ");
+  if (list.includes("https://www.googleapis.com/auth/calendar")) return [];
+  return Object.entries(REQUIRED_SCOPES)
+    .filter(([scope]) => !list.includes(scope))
+    .map(([, label]) => label);
 }

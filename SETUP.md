@@ -71,9 +71,21 @@ Never paste this key into chat, code, or a commit. It stays in `.env.local` on t
 Add a second redirect URI to the same OAuth client: `https://<your-app>.vercel.app/api/auth/callback/google`, and set the env vars (`AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `ANTHROPIC_API_KEY`) in the Vercel project settings. Don't deploy with demo mode on: in demo mode the chat has no sign-in, so anyone with the link could use your Anthropic credits.
 
 ## Common errors
-| Error | Fix |
+The app now turns Google's errors into plain messages. Here's what each one means.
+
+| What you see | What to do |
 | --- | --- |
 | `redirect_uri_mismatch` | The redirect URI in step 4 doesn't exactly match `http://localhost:3000/api/auth/callback/google`. |
 | `access_denied` / "app is being tested" | Your account isn't in the Test users list (step 3.4). |
-| `403` from the Calendar API | Calendar API isn't enabled (step 2), or scopes weren't added (step 3.5). Sign out and back in after fixing. |
+| "The Google Calendar API isn't turned on..." | Do step 2, wait a minute, then reload. |
+| "This app wasn't given calendar permission" | You unticked a box on Google's screen. Sign out, sign in again, tick both. |
+| "Missing Google permission" banner | Same as above. The app spotted it before you lost any work. |
+| "Your Google sign-in expired or was turned off" | Sign out and back in. Also happens if you removed the app at myaccount.google.com/permissions. |
+| "Couldn't load this calendar: X" | That one calendar failed; everything else still loaded. Usually a calendar shared with limited access. |
 | Missing `AUTH_GOOGLE_ID` | `.env.local` isn't filled in, or you need to restart `npm run dev` after editing it. |
+
+## Checking it worked
+1. The yellow "Demo mode" banner is gone.
+2. The Calendars page lists your real calendars, including Toddle.
+3. Your Toddle assignments show up in the week view.
+4. Tag Toddle as School and your team calendar as Sports, then check the colors.

@@ -4,6 +4,7 @@
 import { AppHeader } from "@/components/app-header";
 import { ImportFlow } from "@/components/import-flow";
 import { Notice } from "@/components/notice";
+import { SetupWarnings } from "@/components/setup-warnings";
 import { SignInScreen } from "@/components/sign-in-screen";
 import { loadCalendars } from "@/lib/calendar-data";
 import { canWrite } from "@/lib/google-calendar";
@@ -39,6 +40,10 @@ export default async function ImportPage() {
         <p className="mb-4 text-muted">
           The AI finds every event, then you check which ones to add. Nothing is added until you tap Add.
         </p>
+        <div className="mb-4 empty:mb-0">
+          <SetupWarnings missingScopes={data.missingScopes} />
+        </div>
+
         {writable.length === 0 ? (
           <Notice>You don&apos;t have any calendars you can add events to.</Notice>
         ) : (

@@ -31,6 +31,7 @@ export type Source = {
   calendars: Calendar[];
   userName?: string | null;
   accessToken?: string; // only in google mode
+  missingScopes: string[]; // permissions the student didn't grant on Google's screen
 };
 
 export type SignedOut = { status: "signed-out"; expired: boolean };
@@ -38,7 +39,7 @@ export type SignedOut = { status: "signed-out"; expired: boolean };
 // Returns the data source, or SignedOut. Throws if Google returns an error.
 export async function getSource(): Promise<Source | SignedOut> {
   if (isDemoMode()) {
-    return { mode: "demo", timeZone: DEMO_TIME_ZONE, calendars: DEMO_CALENDARS, userName: "Demo student" };
+    return { mode: "demo", timeZone: DEMO_TIME_ZONE, calendars: DEMO_CALENDARS, userName: "Demo student", missingScopes: [] };
   }
 
   const session = await auth();
@@ -49,7 +50,14 @@ export async function getSource(): Promise<Source | SignedOut> {
   const calendars = await listCalendars(session.accessToken);
   // The primary calendar's time zone is the one the user set in Google.
   const timeZone = calendars.find((c) => c.primary)?.timeZone ?? "UTC";
-  return { mode: "google", timeZone, calendars, userName: session.user?.name, accessToken: session.accessToken };
+  return {
+    mode: "google",
+    timeZone,
+    calendars,
+    userName: session.user?.name,
+    accessToken: session.accessToken,
+    missingScopes: session.missingScopes ?? [],
+  };
 }
 
 export function isSignedOut(value: Source | SignedOut): value is SignedOut {
@@ -59,7 +67,12 @@ export function isSignedOut(value: Source | SignedOut): value is SignedOut {
 /* ---------- reading ---------- */
 
 // All events from `firstDay` through `lastDay` (both included), sorted by start.
-export async function getEventsBetween(source: Source, firstDay: DayKey, lastDay: DayKey): Promise<CalendarEvent[]> {
+export async function getEventsBetween(
+  source: Source,
+  firstDay: DayKey,
+  lastDay: DayKey,
+  failed?: string[], // optional: collects names of calendars that wouldn't load
+): Promise<CalendarEvent[]> {
   let events: CalendarEvent[];
 
   if (source.mode === "demo") {
@@ -70,7 +83,7 @@ export async function getEventsBetween(source: Source, firstDay: DayKey, lastDay
     }
   } else {
     const { timeMin, timeMax } = fetchRange(firstDay, addDays(lastDay, 1));
-    events = await listEvents(source.accessToken!, source.calendars, timeMin, timeMax);
+    events = await listEvents(source.accessToken!, source.calendars, timeMin, timeMax, failed);
   }
 
   // Keep only events that touch the requested days.
@@ -82,7 +95,7 @@ export async function getEventsBetween(source: Source, firstDay: DayKey, lastDay
 type Loaded<T> = SignedOut | { status: "error"; mode: Mode; userName?: string | null; message: string } | ({ status: "ok" } & T);
 
 export type CalendarsResult = Loaded<Source>;
-export type WeekResult = Loaded<Source & { monday: DayKey; today: DayKey; events: CalendarEvent[] }>;
+export type WeekResult = Loaded<Source & { monday: DayKey; today: DayKey; events: CalendarEvent[]; failedCalendars: string[] }>;
 
 export async function loadCalendars(): Promise<CalendarsResult> {
   try {
@@ -101,8 +114,9 @@ export async function loadWeek(requestedWeek?: string): Promise<WeekResult> {
 
     const today = todayIn(source.timeZone);
     const monday = startOfWeek(isDayKey(requestedWeek) ? requestedWeek : today);
-    const events = await getEventsBetween(source, monday, addDays(monday, 6));
-    return { status: "ok", ...source, today, monday, events };
+    const failedCalendars: string[] = [];
+    const events = await getEventsBetween(source, monday, addDays(monday, 6), failedCalendars);
+    return { status: "ok", ...source, today, monday, events, failedCalendars };
   } catch (err) {
     return { status: "error", mode: isDemoMode() ? "demo" : "google", message: errorMessage(err) };
   }

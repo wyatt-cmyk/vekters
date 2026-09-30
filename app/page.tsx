@@ -9,6 +9,7 @@ import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
 import { ChatPanel } from "@/components/chat-panel";
 import { Notice } from "@/components/notice";
+import { SetupWarnings } from "@/components/setup-warnings";
 import { SignInScreen } from "@/components/sign-in-screen";
 import { WeekGrid } from "@/components/week-grid";
 import { loadWeek } from "@/lib/calendar-data";
@@ -90,6 +91,8 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
               Import
             </Link>
           </div>
+
+          <SetupWarnings missingScopes={data.missingScopes} failedCalendars={data.failedCalendars} />
 
           {data.mode === "demo" && (
             <Notice>

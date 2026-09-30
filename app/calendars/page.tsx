@@ -4,6 +4,7 @@
 import { setCalendarTag } from "@/app/actions";
 import { AppHeader } from "@/components/app-header";
 import { Notice } from "@/components/notice";
+import { SetupWarnings } from "@/components/setup-warnings";
 import { SignInScreen } from "@/components/sign-in-screen";
 import { loadCalendars } from "@/lib/calendar-data";
 import { readSavedTags, TAG_LABELS, TAGS, tagsForCalendars, type Tag } from "@/lib/tags";
@@ -35,6 +36,10 @@ export default async function CalendarsPage() {
         <p className="mb-4 text-muted">
           Tag each calendar so its events get the right color. Untagged calendars are guessed from their name.
         </p>
+
+        <div className="mb-4 empty:mb-0">
+          <SetupWarnings missingScopes={data.missingScopes} />
+        </div>
 
         <ul className="divide-y divide-line rounded-lg border border-line bg-surface">
           {data.calendars.map((cal) => (

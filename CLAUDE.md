@@ -91,7 +91,8 @@ Layout notes:
 - `lib/proposals.ts` — the `EventProposal` type, validation, and conversion to Google's event format.
 - `components/` — header, week grid + event cards, sign-in screen, notice box.
 - `lib/calendar-data.ts` — decides demo vs. real Google data, for reading (`loadWeek`, `getEventsBetween`) and writing (`createEventFromProposal`).
-- `lib/google-calendar.ts` — server-only helpers that call the Google Calendar REST API.
+- `lib/google-calendar.ts` — server-only helpers that call the Google Calendar REST API, with `GoogleCalendarError` turning Google's errors into plain messages.
+- `components/setup-warnings.tsx` — banners for missing Google permissions and calendars that wouldn't load.
 - `lib/demo-data.ts` — sample calendars and events in Google's format.
 - `lib/week.ts` — date helpers. Days are plain "YYYY-MM-DD" strings; weeks start Monday.
 - `lib/tags.ts` — calendar tags, stored in a cookie (per browser, no database yet), with name-based guesses.
@@ -110,3 +111,12 @@ On automatically when `AUTH_GOOGLE_ID` or `AUTH_GOOGLE_SECRET` is empty, or when
 - Review rows start unchecked when: likely duplicate of an existing event, listed twice, date in the past, or invalid (invalid rows can't be checked).
 - Warnings shown: missing details from the AI, end time defaulted to 2 hours, past date, duplicates. The calendar can be changed per row.
 - Not yet: editing a row's title/date/time before adding.
+
+## Google connection notes
+- Scopes are checked after sign-in. Google lets people untick permissions, so `missingScopes` on the session drives a warning banner instead of letting a save fail later.
+- A calendar that fails to load is named in a banner, not silently skipped.
+- Both `calendarList` and `events` follow `nextPageToken`, so accounts with many calendars or a full season of events aren't truncated.
+- A calendar the student renamed in Google shows the name they chose (`summaryOverride`).
+
+### Open question for the cancel feature (Milestone 3 follow-up)
+CLAUDE.md says cancelled events are marked cancelled, not deleted, and the week grid already draws them struck through. But Google's `events.list` leaves cancelled events out unless we pass `showDeleted=true`, and that would also show everything the student ever deleted. So decide when building cancel: either rename the event ("CANCELLED: Practice"), or keep `status: "cancelled"` and fetch deleted events only for calendars we wrote to. Right now the strikethrough styling never triggers on real data.
