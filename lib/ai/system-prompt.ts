@@ -22,13 +22,28 @@ Style: your replies appear in a narrow chat panel next to the calendar. Keep the
 
 type CalendarInfo = { id: string; name: string; tag: string; primary: boolean };
 
-export function buildContext(opts: { today: string; weekday: string; time: string; timeZone: string; writableCalendars: CalendarInfo[] }) {
+// The part of the prompt that changes per student but NOT per message.
+// Keeping it steady through a conversation matters: Claude ties its reasoning to
+// the exact wording it saw, so a prompt that changed every message would be
+// rejected. That's why the clock time lives in `nowLine()` below instead.
+export function buildContext(opts: {
+  today: string;
+  weekday: string;
+  timeZone: string;
+  writableCalendars: CalendarInfo[];
+}) {
   const calendars = opts.writableCalendars
     .map((c) => `- id: ${JSON.stringify(c.id)}, name: ${JSON.stringify(c.name)}, tag: ${c.tag}${c.primary ? ", primary" : ""}`)
     .join("\n");
 
-  return `Today is ${opts.weekday}, ${opts.today}. The current time is ${opts.time}. The student's time zone is ${opts.timeZone}.
+  return `Today is ${opts.weekday}, ${opts.today}. The student's time zone is ${opts.timeZone}.
 
 Calendars the student can add events to:
 ${calendars || "(none: the student has no calendars you can add to)"}`;
+}
+
+// Sent with each message rather than in the system prompt, because it changes
+// every time and would otherwise invalidate the conversation.
+export function nowLine(clock: string) {
+  return `(Right now it's ${clock}.)`;
 }

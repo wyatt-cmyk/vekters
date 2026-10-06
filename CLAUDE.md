@@ -85,7 +85,8 @@ Layout notes:
 - `lib/ai/build-proposal.ts` — turns Claude's event fields into an `EventProposal`; shared by chat and import.
 - `lib/ai/errors.ts` — turns Anthropic API errors into friendly messages.
 - `lib/duplicates.ts` — rule-based duplicate detection (same day + matching title).
-- `lib/ai/chat.ts` — the agent loop: calls Claude (`claude-opus-5`), runs tools, collects proposals.
+- `lib/ai/chat.ts` — the agent loop: calls Claude, runs tools, collects proposals.
+- `lib/ai/model.ts` — the model name and shared request settings, all in one place.
 - `lib/ai/tools.ts` — tool definitions (`find_events`, `create_event`) and the shared `EVENT_FIELDS` schema.
 - `lib/ai/system-prompt.ts` — Claude's rules, plus today's date, time zone, and writable calendars.
 - `lib/proposals.ts` — the `EventProposal` type, validation, and conversion to Google's event format.
@@ -120,3 +121,11 @@ On automatically when `AUTH_GOOGLE_ID` or `AUTH_GOOGLE_SECRET` is empty, or when
 
 ### Open question for the cancel feature (Milestone 3 follow-up)
 CLAUDE.md says cancelled events are marked cancelled, not deleted, and the week grid already draws them struck through. But Google's `events.list` leaves cancelled events out unless we pass `showDeleted=true`, and that would also show everything the student ever deleted. So decide when building cancel: either rename the event ("CANCELLED: Practice"), or keep `status: "cancelled"` and fetch deleted events only for calendars we wrote to. Right now the strikethrough styling never triggers on real data.
+
+## Model choice
+`lib/ai/model.ts` holds the model name. Currently **Claude Sonnet 5.5** (`claude-sonnet-5-5`), at $2 per million input tokens and $10 per million output. Claude Opus 5.5 is the stronger, pricier option if reading messy schedules ever disappoints. Claude Opus 5 is retired to legacy and costs more than Opus 5.5, so don't go back to it.
+
+Effort is set per job: `medium` for chat, because the student is waiting, and `high` for import, because reading a blurry schedule is the hardest thing we ask.
+
+### Why the system prompt must not change between messages
+Sonnet 5.5 ties its thinking blocks to the exact conversation that produced them. We resend the whole conversation each turn, so if the system prompt, the tool list, or an earlier message changed in between, the API rejects the request. That's why the clock time is sent with each message (`nowLine`) instead of inside the system prompt, which would otherwise differ every single time. As a second guard, every request sets `block_binding.prefix_mismatch_behavior: "drop_block"`, so a mismatch drops the stale thinking instead of failing. Keep the conversation append-only: never rewrite earlier turns.

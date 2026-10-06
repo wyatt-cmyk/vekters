@@ -13,10 +13,10 @@ import type { EventProposal } from "../proposals";
 import { tagsForCalendars, type Tag } from "../tags";
 import { addDays, formatLongWeekday, isDayKey, todayIn, toLocalDateTime } from "../week";
 import { buildProposal } from "./build-proposal";
-import { buildContext, RULES } from "./system-prompt";
+import { MODEL, SHARED_REQUEST } from "./model";
+import { buildContext, nowLine, RULES } from "./system-prompt";
 import { TOOLS } from "./tools";
 
-export const MODEL = "claude-opus-5";
 const MAX_STEPS = 6; // stops a confused conversation from looping forever
 
 type Message = Anthropic.Beta.BetaMessageParam;
@@ -50,14 +50,14 @@ export async function runChat({ source, savedTags, history, userText, appNotes }
       text: buildContext({
         today,
         weekday: formatLongWeekday(today),
-        time: toLocalDateTime(new Date(), source.timeZone).slice(11),
         timeZone: source.timeZone,
         writableCalendars: writable.map((c) => ({ id: c.id, name: c.summary, tag: tagOf.get(c.id)!, primary: !!c.primary })),
       }),
     },
   ];
 
-  const userContent = [...appNotes.map((note) => `(App note: ${note})`), userText].join("\n\n");
+  const clock = toLocalDateTime(new Date(), source.timeZone).slice(11);
+  const userContent = [nowLine(clock), ...appNotes.map((note) => `(App note: ${note})`), userText].join("\n\n");
   const messages: Message[] = [...history, { role: "user", content: userContent }];
   const proposals: EventProposal[] = [];
   let reply = "";
@@ -69,10 +69,10 @@ export async function runChat({ source, savedTags, history, userText, appNotes }
       system,
       tools: TOOLS,
       messages,
-      // If Claude's safety filter declines a request, the API automatically
-      // retries it on a fallback model instead of failing.
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
+      // Chat is the part a student waits on, so use medium effort: quicker
+      // replies and lower cost, which is what Anthropic suggests for chat.
+      output_config: { effort: "medium" },
+      ...SHARED_REQUEST,
     });
 
     if (response.stop_reason === "refusal") {

@@ -56,8 +56,8 @@ Open http://localhost:3000 → **Sign in with Google**.
 
 ## Anthropic API key (for the AI chat)
 The chat works in demo mode too, but it needs this key either way.
-1. Go to https://console.anthropic.com and sign in (or create an account).
-2. Add credits under **Billing**. Each chat message costs a small amount. Set a monthly spend limit under **Limits** so there are no surprises.
+1. Go to https://platform.claude.com and sign in or create an account. The old console.anthropic.com address redirects there.
+2. Add credits under **Billing**. The smallest amount is five dollars. The app uses Claude Sonnet 5.5, which costs roughly one to three cents per chat message and four to ten cents per schedule import. Set a monthly spend limit under **Limits** first, so there are no surprises.
 3. Go to **API keys → Create key**. Name it `Athlete Calendar (local)` and copy it. You only see it once.
 4. Paste it into `.env.local`:
    ```

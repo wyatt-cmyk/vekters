@@ -9,9 +9,9 @@ import { findSimilarEvent, repeatsEarlier } from "../duplicates";
 import { canWrite } from "../google-calendar";
 import type { EventProposal } from "../proposals";
 import { tagsForCalendars, type Tag } from "../tags";
-import { addDays, formatEventTime, formatLongWeekday, todayIn, toLocalDateTime } from "../week";
+import { addDays, formatEventTime, formatLongWeekday, todayIn } from "../week";
 import { buildProposal, defaultCalendarId } from "./build-proposal";
-import { MODEL } from "./chat";
+import { MODEL, SHARED_REQUEST } from "./model";
 import { buildContext } from "./system-prompt";
 import { EVENT_FIELD_NAMES, EVENT_FIELDS } from "./tools";
 
@@ -104,16 +104,16 @@ export async function extractSchedule(
           text: buildContext({
             today,
             weekday: formatLongWeekday(today),
-            time: toLocalDateTime(new Date(), source.timeZone).slice(11),
             timeZone: source.timeZone,
             writableCalendars: writable.map((c) => ({ id: c.id, name: c.summary, tag: tagOf.get(c.id)!, primary: !!c.primary })),
           }),
         },
       ],
       messages: [{ role: "user", content }],
-      output_config: { format: { type: "json_schema", schema: OUTPUT_SCHEMA } },
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
+      // Reading a messy schedule is the hardest thing we ask of Claude and it
+      // runs once, not in a back-and-forth, so pay for the careful setting.
+      output_config: { effort: "high", format: { type: "json_schema", schema: OUTPUT_SCHEMA } },
+      ...SHARED_REQUEST,
     })
     .finalMessage();
 
