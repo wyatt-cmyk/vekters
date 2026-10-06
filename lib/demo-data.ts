@@ -69,16 +69,27 @@ export function demoEventsForWeek(monday: DayKey): CalendarEvent[] {
   timed(primary, 1, "18:30", "19:15", "Dentist");
   timed(primary, 6, "15:00", "17:00", "Study group", "Library");
 
-  return events;
+  // Apply any edits made through the chat in demo mode.
+  const overrides = demoOverrides();
+  return events.map((e) => overrides.get(e.id)?.(e) ?? e);
 }
 
 // Events "added" in demo mode are kept in the server's memory, so they vanish
 // when the dev server restarts. globalThis keeps one shared list even when
 // Next.js reloads this file during development.
-const memory = globalThis as unknown as { demoAddedEvents?: CalendarEvent[] };
+const memory = globalThis as unknown as {
+  demoAddedEvents?: CalendarEvent[];
+  demoOverrides?: Map<string, (event: CalendarEvent) => CalendarEvent>;
+};
 
 export function demoAddedEvents(): CalendarEvent[] {
   return (memory.demoAddedEvents ??= []);
+}
+
+// Edits to the generated sample events, kept by event id. Demo mode regenerates
+// those events on every request, so changes have to be re-applied each time.
+export function demoOverrides(): Map<string, (event: CalendarEvent) => CalendarEvent> {
+  return (memory.demoOverrides ??= new Map());
 }
 
 

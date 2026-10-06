@@ -139,7 +139,7 @@ export async function reviewEvents(
   const fallback = defaultCalendarId(writable);
   const built = parsed.events.slice(0, MAX_EVENTS).map((raw) => ({
     raw,
-    ...buildProposal(raw, writable, tagOf, fallback),
+    ...buildProposal(raw, writable, tagOf, { fallbackCalendarId: fallback }),
   }));
 
   // Look up what's already on the calendar across the schedule's dates, to spot duplicates.

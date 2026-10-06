@@ -3,7 +3,7 @@
 
 import { cookies } from "next/headers";
 import { refresh } from "next/cache";
-import { createEventFromProposal, getSource, isSignedOut } from "@/lib/calendar-data";
+import { applyProposal, getSource, isSignedOut } from "@/lib/calendar-data";
 import { canWrite } from "@/lib/google-calendar";
 import { checkProposal, type EventProposal } from "@/lib/proposals";
 import { isTag, readSavedTags, TAG_COOKIE } from "@/lib/tags";
@@ -36,14 +36,14 @@ export async function confirmProposal(proposal: EventProposal): Promise<{ ok: tr
 
     // Check the card again: it came from the browser, so it could have been changed.
     const problem = checkProposal(proposal, source.calendars.filter(canWrite).map((c) => c.id));
-    if (problem) return { ok: false, error: `Can't add this event: ${problem}` };
+    if (problem) return { ok: false, error: `Can't do this: ${problem}` };
 
-    await createEventFromProposal(source, proposal);
-    refresh(); // re-render the week view so the new event shows up
+    await applyProposal(source, proposal);
+    refresh(); // re-render the week view so the change shows up
     return { ok: true };
   } catch (err) {
     console.error("Confirm failed:", err);
-    return { ok: false, error: "Couldn't add the event. Try again." };
+    return { ok: false, error: err instanceof Error ? err.message : "Couldn't save the change. Try again." };
   }
 }
 
@@ -74,7 +74,7 @@ export async function confirmImport(proposals: EventProposal[]): Promise<{ resul
         results.push({ id: String(p.id), ok: false, error: problem });
         continue;
       }
-      await createEventFromProposal(source, p);
+      await applyProposal(source, p);
       results.push({ id: p.id, ok: true });
     } catch (err) {
       console.error("Import add failed:", err);

@@ -25,6 +25,12 @@ export const EVENT_FIELDS = {
 };
 export const EVENT_FIELD_NAMES = Object.keys(EVENT_FIELDS);
 
+// update_event names the calendar and event separately, so it reuses every
+// field except calendar_id.
+const EVENT_FIELDS_WITHOUT_CALENDAR = Object.fromEntries(
+  Object.entries(EVENT_FIELDS).filter(([name]) => name !== "calendar_id"),
+);
+
 export const TOOLS: Anthropic.Beta.BetaTool[] = [
   {
     name: "find_events",
@@ -55,6 +61,41 @@ export const TOOLS: Anthropic.Beta.BetaTool[] = [
         ...EVENT_FIELDS,
       },
       required: EVENT_FIELD_NAMES,
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "update_event",
+    description:
+      "Propose a change to an event that already exists, for example when a message says practice moved to a new time. " +
+      "Find the event with find_events first and use its event_id. This does NOT change anything: the student sees a " +
+      "card showing what changes and taps Confirm. Give every field its final value, copying the ones that stay the same.",
+    strict: true,
+    input_schema: {
+      type: "object",
+      properties: {
+        calendar_id: { type: "string", description: "The calendar the event is on, from find_events." },
+        event_id: { type: "string", description: "The event_id from find_events." },
+        ...EVENT_FIELDS_WITHOUT_CALENDAR,
+      },
+      required: ["calendar_id", "event_id", ...EVENT_FIELD_NAMES.filter((n) => n !== "calendar_id")],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "cancel_event",
+    description:
+      "Propose marking an existing event as cancelled, for example when a message says a game is called off. " +
+      "The event is never deleted: its name gets a \"Cancelled:\" prefix so the student can still see it was called off. " +
+      "Find the event with find_events first. The student still has to tap Confirm.",
+    strict: true,
+    input_schema: {
+      type: "object",
+      properties: {
+        calendar_id: { type: "string", description: "The calendar the event is on, from find_events." },
+        event_id: { type: "string", description: "The event_id from find_events." },
+      },
+      required: ["calendar_id", "event_id"],
       additionalProperties: false,
     },
   },

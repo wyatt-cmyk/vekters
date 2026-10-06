@@ -1,6 +1,7 @@
 // The 7-column week grid. On narrow screens (phones, small tablets) the days
 // stack vertically instead, because 7 columns won't fit.
 import type { CalendarEvent } from "@/lib/google-calendar";
+import { isCancelledTitle } from "@/lib/proposals";
 import type { Tag } from "@/lib/tags";
 import { formatDayNumber, formatEventTime, formatWeekday, type DayKey } from "@/lib/week";
 
@@ -69,7 +70,9 @@ const CARD_STYLES: Record<Tag, { card: string; label: string }> = {
 
 function EventCard({ event, tag, timeZone }: { event: CalendarEvent; tag: Tag; timeZone: string }) {
   const style = CARD_STYLES[tag];
-  const cancelled = event.status === "cancelled";
+  // Google hides events it considers deleted, so we mark cancellations by
+  // renaming them. Either signal counts.
+  const cancelled = event.status === "cancelled" || isCancelledTitle(event.summary);
   return (
     <li className={`rounded-md px-2 py-1.5 ${style.card} ${cancelled ? "opacity-60" : ""}`}>
       {/* Small uppercase label: which calendar (class or sport) it came from. */}

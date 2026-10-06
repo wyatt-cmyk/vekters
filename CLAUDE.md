@@ -102,9 +102,11 @@ Layout notes:
 ## Demo mode
 On automatically when `AUTH_GOOGLE_ID` or `AUTH_GOOGLE_SECRET` is empty, or when `DEMO_MODE=true`. Skips sign-in and shows sample data. Events confirmed from the chat are kept in server memory and disappear on restart. Never deploy with demo mode on: the chat endpoint has no sign-in then.
 
-## AI chat status (Milestone 3)
-- Done: create only. Claude calls `find_events` (read-only, runs automatically) and `create_event` (only makes a confirmation card). Confirm calls `confirmProposal`.
-- Not yet: `update_event` and `cancel_event`. For "moved"/"cancelled" messages Claude finds the event and says editing is coming soon, instead of creating a duplicate.
+## AI chat status (Milestone 3) — complete
+- Tools: `find_events` (read-only), `create_event`, `update_event`, `cancel_event`. Each write tool only produces a confirmation card; `confirmProposal` is the only code that writes.
+- A proposal carries an `action` of create, update or cancel. Update and cancel also carry the `eventId` and a `before` snapshot, so the card can show what changes.
+- When a message produces several cards, the panel offers "Confirm all".
+- Cancel re-reads the event's current name from the calendar instead of trusting the card, which may be stale.
 - The server keeps no chat state: the browser sends the conversation history back each time. Never edit old history; only append.
 
 ## Schedule import status (Milestone 4)
@@ -119,8 +121,8 @@ On automatically when `AUTH_GOOGLE_ID` or `AUTH_GOOGLE_SECRET` is empty, or when
 - Both `calendarList` and `events` follow `nextPageToken`, so accounts with many calendars or a full season of events aren't truncated.
 - A calendar the student renamed in Google shows the name they chose (`summaryOverride`).
 
-### Open question for the cancel feature (Milestone 3 follow-up)
-CLAUDE.md says cancelled events are marked cancelled, not deleted, and the week grid already draws them struck through. But Google's `events.list` leaves cancelled events out unless we pass `showDeleted=true`, and that would also show everything the student ever deleted. So decide when building cancel: either rename the event ("CANCELLED: Practice"), or keep `status: "cancelled"` and fetch deleted events only for calendars we wrote to. Right now the strikethrough styling never triggers on real data.
+### How cancelling works
+Google hides an event whose status is `cancelled`, so "mark it cancelled, don't delete it" can't be done with the status field. Instead `cancel_event` renames the event with a `Cancelled: ` prefix and leaves it in place, so a called-off game still shows on the week. The week grid treats either signal, the prefix or a `cancelled` status, as cancelled and draws it struck through. `cancelledTitle()` and `isCancelledTitle()` in `lib/proposals.ts` are the single source of that convention.
 
 ## Model choice
 `lib/ai/model.ts` holds the model name. Currently **Claude Sonnet 5.5** (`claude-sonnet-5-5`), at $2 per million input tokens and $10 per million output. Claude Opus 5.5 is the stronger, pricier option if reading messy schedules ever disappoints. Claude Opus 5 is retired to legacy and costs more than Opus 5.5, so don't go back to it.

@@ -7,9 +7,9 @@ import "server-only";
 
 import Anthropic from "@anthropic-ai/sdk";
 import type { Source } from "../calendar-data";
-import { getEventsBetween } from "../calendar-data";
+import { getEventSnapshot, getEventsBetween } from "../calendar-data";
 import { canWrite, type Calendar } from "../google-calendar";
-import type { EventProposal } from "../proposals";
+import { checkProposal, type EventProposal } from "../proposals";
 import { tagsForCalendars, type Tag } from "../tags";
 import { addDays, formatLongWeekday, isDayKey, todayIn, toLocalDateTime } from "../week";
 import { buildProposal } from "./build-proposal";
@@ -149,6 +149,55 @@ async function runTool(
         status: e.status,
       }));
       return result(list.length ? JSON.stringify(list) : "No events in that range.");
+    }
+
+    // update_event and cancel_event both need an event that already exists, so
+    // look it up first. That also gives us the "before" shown on the card.
+    if (toolUse.name === "update_event" || toolUse.name === "cancel_event") {
+      const calendarId = String(input.calendar_id ?? "");
+      const eventId = String(input.event_id ?? "");
+      const calendar = ctx.writable.find((c) => c.id === calendarId);
+      if (!calendar) return result("That calendar isn't one the student can change.", true);
+
+      const before = await getEventSnapshot(ctx.source, calendarId, eventId);
+      if (!before) return result("No event with that event_id on that calendar. Run find_events again.", true);
+
+      if (toolUse.name === "cancel_event") {
+        const proposal: EventProposal = {
+          id: crypto.randomUUID(),
+          action: "cancel",
+          eventId,
+          before,
+          calendarId,
+          calendarName: calendar.summary,
+          tag: ctx.tagOf.get(calendarId) ?? "other",
+          title: before.title || "(no title)",
+          date: before.date,
+          allDay: before.allDay,
+          startTime: before.startTime,
+          endTime: before.endTime,
+          endTimeDefaulted: false,
+          location: before.location,
+          notes: "",
+        };
+        const problem = checkProposal(proposal, ctx.writable.map((c) => c.id));
+        if (problem) return result(`Not proposed: ${problem}`, true);
+        ctx.proposals.push(proposal);
+        return result(
+          `Shown as a card to cancel "${before.title}". Nothing has changed yet; it is marked cancelled only if the student taps Confirm.`,
+        );
+      }
+
+      const { proposal, problem } = buildProposal({ ...input, calendar_id: calendarId }, ctx.writable, ctx.tagOf, {
+        action: "update",
+        eventId,
+        before,
+      });
+      if (problem) return result(`Not proposed: ${problem}`, true);
+      ctx.proposals.push(proposal);
+      return result(
+        `Shown as a card changing "${before.title}". Nothing has changed yet; it only changes if the student taps Confirm.`,
+      );
     }
 
     if (toolUse.name === "create_event") {

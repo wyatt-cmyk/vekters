@@ -6,15 +6,17 @@
 import "server-only";
 
 import { auth } from "@/auth";
-import { DEMO_CALENDARS, DEMO_TIME_ZONE, demoAddedEvents, demoEventsForWeek, localIso } from "./demo-data";
+import { DEMO_CALENDARS, DEMO_TIME_ZONE, demoAddedEvents, demoEventsForWeek, demoOverrides, localIso } from "./demo-data";
 import {
+  getEvent,
   insertEvent,
   listCalendars,
   listEvents,
+  patchEvent,
   type Calendar,
   type CalendarEvent,
 } from "./google-calendar";
-import { proposalDescription, proposalTimes, type EventProposal } from "./proposals";
+import { cancelledTitle, proposalDescription, proposalTimes, snapshotOf, type EventProposal, type EventSnapshot } from "./proposals";
 import { addDays, eventDays, fetchRange, isDayKey, startOfWeek, todayIn, type DayKey } from "./week";
 
 // Demo mode is on when the Google keys are missing, or when DEMO_MODE=true.
@@ -124,7 +126,14 @@ export async function loadWeek(requestedWeek?: string): Promise<WeekResult> {
 
 /* ---------- writing (only after the user taps Confirm) ---------- */
 
-export async function createEventFromProposal(source: Source, p: EventProposal) {
+// Runs a confirmation card. This is the only place events are written.
+export async function applyProposal(source: Source, p: EventProposal) {
+  if (p.action === "create") return createEvent(source, p);
+  if (p.action === "update") return updateEvent(source, p);
+  return cancelEvent(source, p);
+}
+
+async function createEvent(source: Source, p: EventProposal) {
   const { start, end } = proposalTimes(p, source.timeZone);
 
   if (source.mode === "google") {
@@ -149,6 +158,75 @@ export async function createEventFromProposal(source: Source, p: EventProposal) 
     calendarId: p.calendarId,
     calendarName: p.calendarName,
   });
+}
+
+async function updateEvent(source: Source, p: EventProposal) {
+  const { start, end } = proposalTimes(p, source.timeZone);
+
+  if (source.mode === "google") {
+    // PATCH changes only what we send, so anything else on the event survives.
+    await patchEvent(source.accessToken!, p.calendarId, p.eventId!, {
+      summary: p.title,
+      location: p.location,
+      start,
+      end,
+    });
+    return;
+  }
+
+  patchDemoEvent(p.eventId!, (event) => ({
+    ...event,
+    summary: p.title,
+    location: p.location || undefined,
+    start: p.allDay ? start : { dateTime: localIso(p.date, p.startTime) },
+    end: p.allDay ? end : { dateTime: localIso(end.dateTime!.slice(0, 10), p.endTime) },
+  }));
+}
+
+// CLAUDE.md: cancelled events are marked, not deleted. We rename them so the
+// student can still see that practice was called off.
+async function cancelEvent(source: Source, p: EventProposal) {
+  // Read the event's name from the calendar rather than trusting the card: the
+  // card came from the browser and may be out of date if the event changed
+  // since it was shown.
+  const live = await getEventSnapshot(source, p.calendarId, p.eventId!);
+  if (!live) throw new Error("That event is no longer on your calendar.");
+  const title = cancelledTitle(live.title || p.title);
+
+  if (source.mode === "google") {
+    await patchEvent(source.accessToken!, p.calendarId, p.eventId!, { summary: title });
+    return;
+  }
+  patchDemoEvent(p.eventId!, (event) => ({ ...event, summary: title }));
+}
+
+// Demo mode has two kinds of events: ones added through the app (editable in
+// place) and ones generated per week (we store an override instead).
+function patchDemoEvent(eventId: string, change: (event: CalendarEvent) => CalendarEvent) {
+  const added = demoAddedEvents();
+  const index = added.findIndex((e) => e.id === eventId);
+  if (index >= 0) {
+    added[index] = change(added[index]);
+    return;
+  }
+  demoOverrides().set(eventId, change);
+}
+
+// Looks up what an existing event currently is, for the "before" on a card.
+export async function getEventSnapshot(
+  source: Source,
+  calendarId: string,
+  eventId: string,
+): Promise<EventSnapshot | null> {
+  if (source.mode === "google") {
+    const event = await getEvent(source.accessToken!, calendarId, eventId);
+    return snapshotOf({ ...event, calendarId, calendarName: "" }, source.timeZone);
+  }
+  // Demo mode: search the weeks around today for a matching event.
+  const today = todayIn(source.timeZone);
+  const events = await getEventsBetween(source, addDays(today, -60), addDays(today, 180));
+  const event = events.find((e) => e.id === eventId && e.calendarId === calendarId);
+  return event ? snapshotOf(event, source.timeZone) : null;
 }
 
 function errorMessage(err: unknown) {

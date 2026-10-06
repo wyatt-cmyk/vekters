@@ -6,7 +6,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { confirmProposal } from "@/app/actions";
-import { describeWhen, type EventProposal } from "@/lib/proposals";
+import { cancelledTitle, changedFields, describeWhen, type EventProposal } from "@/lib/proposals";
 
 type CardStatus = "pending" | "saving" | "added" | "dismissed";
 
@@ -30,6 +30,7 @@ export function ChatPanel() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const pendingCount = items.filter((i) => i.kind === "proposal" && i.status === "pending").length;
 
   // Scroll to the newest message whenever the list changes.
   useEffect(() => {
@@ -79,15 +80,24 @@ export function ChatPanel() {
     const result = await confirmProposal(p);
     if (result.ok) {
       updateCard(p.id, { status: "added" });
-      setNotes((prev) => [...prev, `The student confirmed "${p.title}" on ${p.date}. It is now on their calendar.`]);
+      setNotes((prev) => [...prev, `The student confirmed the ${p.action} of "${p.title}" on ${p.date}. It is done.`]);
     } else {
       updateCard(p.id, { status: "pending", error: result.error });
     }
   }
 
+  // Confirms every card still waiting. Useful when one message produces a lot of
+  // them, like renaming every practice in a season.
+  async function confirmAll() {
+    const pending = items.filter((i) => i.kind === "proposal" && i.status === "pending");
+    for (const item of pending) {
+      if (item.kind === "proposal") await confirm(item.proposal);
+    }
+  }
+
   function dismiss(p: EventProposal) {
     updateCard(p.id, { status: "dismissed" });
-    setNotes((prev) => [...prev, `The student dismissed the card for "${p.title}" on ${p.date}. It was not added.`]);
+    setNotes((prev) => [...prev, `The student dismissed the card for "${p.title}" on ${p.date}. Nothing changed.`]);
   }
 
   return (
@@ -140,6 +150,17 @@ export function ChatPanel() {
         {busy && <p className="text-sm text-muted">Thinking…</p>}
       </div>
 
+      {pendingCount > 1 && (
+        <div className="border-t border-line px-3 py-2">
+          <button
+            onClick={confirmAll}
+            className="min-h-11 w-full rounded-md bg-ink px-4 font-semibold text-white hover:opacity-90"
+          >
+            Confirm all {pendingCount}
+          </button>
+        </div>
+      )}
+
       <form
         className="border-t border-line p-3"
         onSubmit={(e) => {
@@ -186,6 +207,10 @@ const TAG_STYLE = {
   other: "bg-bg text-muted",
 };
 
+// What the card calls itself, and what it says once it's done.
+const ACTION_LABEL = { create: "New event", update: "Change", cancel: "Cancel" } as const;
+const DONE_LABEL = { create: "Added to your calendar", update: "Calendar updated", cancel: "Marked cancelled" } as const;
+
 function ProposalCard({
   item,
   onConfirm,
@@ -196,17 +221,40 @@ function ProposalCard({
   onDismiss: (p: EventProposal) => void;
 }) {
   const p = item.proposal;
+  const changed = changedFields(p);
+
   return (
     <div className={`rounded-lg border border-line bg-surface ${item.status === "dismissed" ? "opacity-50" : ""}`}>
       <div className={`rounded-t-lg px-3 py-2 ${TAG_STYLE[p.tag]}`}>
-        <p className="text-[11px] font-bold uppercase tracking-wider">New event · {p.calendarName}</p>
+        <p className="text-[11px] font-bold uppercase tracking-wider">
+          {ACTION_LABEL[p.action]} · {p.calendarName}
+        </p>
         <p className="font-semibold text-ink">{p.title}</p>
       </div>
+
       <div className="px-3 py-2 text-sm">
-        <p className="font-heading text-base font-semibold">{describeWhen(p)}</p>
+        {p.action === "update" && p.before ? (
+          <>
+            {/* Show what it was, then what it becomes, so nothing is a surprise. */}
+            <p className="text-muted line-through">{describeWhen(p.before)}</p>
+            <p className="font-heading text-base font-semibold">{describeWhen(p)}</p>
+            {p.before.title !== p.title && <p className="text-muted">Renamed from &ldquo;{p.before.title}&rdquo;</p>}
+            {changed.length > 0 && <p className="mt-1 text-muted">Changes the {changed.join(", ")}.</p>}
+          </>
+        ) : (
+          <p className="font-heading text-base font-semibold">{describeWhen(p)}</p>
+        )}
+
         {p.location && <p className="text-muted">{p.location}</p>}
-        {p.notes && <p className="text-muted">{p.notes}</p>}
-        {p.endTimeDefaulted && (
+        {p.notes && p.action !== "cancel" && <p className="text-muted">{p.notes}</p>}
+
+        {p.action === "cancel" && (
+          <p className="mt-2 text-muted">
+            It stays on your calendar, renamed &ldquo;{cancelledTitle(p.title)}&rdquo;, so you can still see it was called off.
+          </p>
+        )}
+
+        {p.endTimeDefaulted && p.action !== "cancel" && (
           <p className="mt-2 rounded-md border border-warn-line bg-warn-fill px-2 py-1 text-warn">
             No end time was given, so it&apos;s set to 2 hours.
           </p>
@@ -215,7 +263,7 @@ function ProposalCard({
       </div>
 
       <div className="flex gap-2 px-3 pb-3">
-        {item.status === "added" && <p className="font-semibold text-sports">✓ Added to your calendar</p>}
+        {item.status === "added" && <p className="font-semibold text-sports">✓ {DONE_LABEL[p.action]}</p>}
         {item.status === "dismissed" && <p className="text-muted">Dismissed</p>}
         {(item.status === "pending" || item.status === "saving") && (
           <>
@@ -224,7 +272,7 @@ function ProposalCard({
               disabled={item.status === "saving"}
               className="min-h-11 flex-1 rounded-md bg-ink font-semibold text-white hover:opacity-90 disabled:opacity-50"
             >
-              {item.status === "saving" ? "Adding…" : "Confirm"}
+              {item.status === "saving" ? "Saving…" : "Confirm"}
             </button>
             <button
               onClick={() => onDismiss(p)}

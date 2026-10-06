@@ -70,7 +70,7 @@ function explain(status: number, reason: string, googleMessage: string) {
 async function googleRequest<T>(
   accessToken: string,
   path: string,
-  options: { params?: Record<string, string>; method?: "GET" | "POST"; body?: unknown } = {},
+  options: { params?: Record<string, string>; method?: "GET" | "POST" | "PATCH"; body?: unknown } = {},
 ): Promise<T> {
   const url = new URL(BASE_URL + path);
   url.search = new URLSearchParams(options.params ?? {}).toString();
@@ -223,4 +223,27 @@ export async function insertEvent(accessToken: string, calendarId: string, event
 // Calendars the user is allowed to add events to.
 export function canWrite(calendar: Calendar) {
   return calendar.accessRole === "owner" || calendar.accessRole === "writer";
+}
+
+// One event, by id. Used to show "before" on an update or cancel card, and to
+// make sure the event still exists before we change it.
+export async function getEvent(accessToken: string, calendarId: string, eventId: string) {
+  return googleGet<Omit<CalendarEvent, "calendarId" | "calendarName">>(
+    accessToken,
+    `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+  );
+}
+
+// Changes only the fields we send; everything else on the event is left alone.
+export async function patchEvent(
+  accessToken: string,
+  calendarId: string,
+  eventId: string,
+  changes: Partial<NewEvent>,
+) {
+  return googleRequest<{ id: string }>(
+    accessToken,
+    `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+    { method: "PATCH", body: changes },
+  );
 }

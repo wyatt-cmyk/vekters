@@ -3,16 +3,23 @@
 // Having one function for both means the same rules apply everywhere.
 
 import type { Calendar } from "../google-calendar";
-import { addHours, checkProposal, isTime, type EventProposal } from "../proposals";
+import { addHours, checkProposal, isTime, type EventProposal, type EventSnapshot, type ProposalAction } from "../proposals";
 import type { Tag } from "../tags";
 
 export function buildProposal(
   raw: Record<string, unknown>,
   writable: Calendar[],
   tagOf: Map<string, Tag>,
-  // If Claude picks a calendar that isn't allowed, use this one instead of failing.
-  fallbackCalendarId?: string,
+  options: {
+    // If Claude picks a calendar that isn't allowed, use this one instead of failing.
+    fallbackCalendarId?: string;
+    // "update" and "cancel" also need the event being changed.
+    action?: ProposalAction;
+    eventId?: string;
+    before?: EventSnapshot;
+  } = {},
 ): { proposal: EventProposal; problem: string | null } {
+  const { fallbackCalendarId, action = "create", eventId, before } = options;
   let calendarId = String(raw.calendar_id ?? "");
   if (fallbackCalendarId && !writable.some((c) => c.id === calendarId)) calendarId = fallbackCalendarId;
   const calendar = writable.find((c) => c.id === calendarId);
@@ -23,6 +30,9 @@ export function buildProposal(
 
   const proposal: EventProposal = {
     id: crypto.randomUUID(),
+    action,
+    eventId,
+    before,
     calendarId,
     calendarName: calendar?.summary ?? "",
     tag: tagOf.get(calendarId) ?? "other",
