@@ -49,26 +49,32 @@ High school student athletes juggling classes, practices, games, and travel. Our
 - Missing details: ask a short follow-up question.
 
 ## Design
-Clean and sporty. Reference screenshots are in `/designs`.
+Editorial and sporty, not generic. One dominant grounding tone (ink), stark neutrals, and a single sharp accent used sparingly so it always means "this is now". Square corners throughout, hairline borders, no soft tinted cards and no drop shadows.
 
-Colors:
-- Background: #F3F1EB
+Colours (tokens live in `app/globals.css`, so use `bg-ink`, `text-school`, `border-line` and so on, never raw hex in components):
+- Page background: #F2F3F5 (cool grey, deliberately not beige)
 - Surface: #FFFFFF
-- Text: #1C1F24
-- Muted text: #5A5F66
-- Borders: #DDD9CF
-- School: text #2F4E8C, fill #E7ECF6
-- Sports: text #2A5F3E, fill #E3F0E7
-- Warnings: text #6B3A08, fill #FBEFD9, border #E9C98F
-- Primary button: #1C1F24 with white text
+- Ink (header bar, primary buttons, body text): #11131A
+- Muted text: #5B6069
+- Borders: #DBDEE3
+- Accent (today, active states, nothing else): #D7FF3E with #11131A text
+- School: #1B45B0, light fill #EAEFFC
+- Sports: #0F7A4A, light fill #E6F4EC
+- Warning: text #8A3B00, fill #FFF1DD, border #E8B878
 
-Fonts (Google Fonts):
-- Headings and numbers: Barlow Condensed (600, 700)
-- Body: Source Sans 3 (400, 600, 700)
+Fonts (Google Fonts, loaded in `app/layout.tsx`):
+- Display: Instrument Serif 400. Wordmark, page headings, day numbers. Large sizes only.
+- Body and UI: Instrument Sans 400/500/600/700.
+- Use the `.nums` class for times and dates so columns line up.
+
+Icons: Lucide (`lucide-react`). Never emoji or text characters such as a tick or chevron.
 
 Layout notes:
-- Web week view: header with week navigation, School and Sports filter chips, and an Import button. Crunch-day alert banner above a 7-column week grid. AI chat panel on the right (about 380px wide).
-- Event cards: tinted fill, small uppercase label (class or sport), event name, time.
+- Dark header bar with the wordmark. The week toolbar leads with the date range in the display serif, then navigation, filter chips and Import.
+- The week is one hairline table (`gap-px` over a `bg-line` parent), not seven floating cards, and it stretches to fill the screen height.
+- Event cards are white with a hard 3px left bar in the category colour and a small uppercase category label. No pastel fills.
+- Today is marked by an accent block behind the day header.
+- AI chat panel on the right, about 380px, at 1280px and wider. Below that it stacks above the week.
 - Touch targets at least 44px tall.
 
 ## Project layout (kept up to date as we build)

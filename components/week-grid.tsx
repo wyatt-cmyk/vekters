@@ -1,5 +1,5 @@
-// The 7-column week grid. On narrow screens (phones, small tablets) the days
-// stack vertically instead, because 7 columns won't fit.
+// The 7-column week. On narrow screens the days stack instead, because seven
+// columns won't fit a phone.
 import type { CalendarEvent } from "@/lib/google-calendar";
 import { isCancelledTitle } from "@/lib/proposals";
 import type { Tag } from "@/lib/tags";
@@ -15,7 +15,9 @@ type Props = {
 
 export function WeekGrid({ days, eventsByDay, tagOf, today, timeZone }: Props) {
   return (
-    <div className="grid grid-cols-1 gap-2 lg:grid-cols-7">
+    // A single hairline grid: the gap shows the page colour through, so the
+    // seven days read as one table rather than seven floating cards.
+    <div className="grid flex-1 auto-rows-fr grid-cols-1 gap-px border border-line bg-line lg:grid-cols-7">
       {days.map((day) => {
         const events = eventsByDay.get(day) ?? [];
         const isToday = day === today;
@@ -23,27 +25,19 @@ export function WeekGrid({ days, eventsByDay, tagOf, today, timeZone }: Props) {
           <section
             key={day}
             aria-label={`${formatWeekday(day)} ${formatDayNumber(day)}`}
-            className={`flex flex-col rounded-lg border bg-surface p-2 lg:min-h-80 ${
-              isToday ? "border-ink" : "border-line"
-            }`}
+            className="flex flex-col bg-surface lg:min-h-80"
           >
-            <h2 className="mb-2 flex items-baseline gap-2 px-1">
-              <span className="font-heading text-sm font-semibold uppercase tracking-wider text-muted">
+            <h2 className={`flex items-baseline gap-2 px-3 py-2 ${isToday ? "bg-accent" : ""}`}>
+              <span className={`text-[11px] font-bold uppercase tracking-widest ${isToday ? "text-accent-ink" : "text-muted"}`}>
                 {formatWeekday(day)}
               </span>
-              <span
-                className={`font-heading text-2xl font-bold leading-none ${
-                  isToday ? "rounded bg-ink px-1.5 py-0.5 text-white" : ""
-                }`}
-              >
-                {formatDayNumber(day)}
-              </span>
+              <span className="font-display nums text-3xl leading-none">{formatDayNumber(day)}</span>
             </h2>
 
             {events.length === 0 ? (
-              <p className="px-1 text-sm text-muted">Nothing scheduled</p>
+              <p className="px-3 py-2 text-sm text-muted">—</p>
             ) : (
-              <ul className="flex flex-col gap-1.5">
+              <ul className="flex flex-col">
                 {events.map((event) => (
                   <EventCard
                     key={`${event.calendarId}-${event.id}`}
@@ -61,26 +55,29 @@ export function WeekGrid({ days, eventsByDay, tagOf, today, timeZone }: Props) {
   );
 }
 
-// Colors per tag, from the design brief.
-const CARD_STYLES: Record<Tag, { card: string; label: string }> = {
-  school: { card: "bg-school-fill", label: "text-school" },
-  sports: { card: "bg-sports-fill", label: "text-sports" },
-  other: { card: "bg-bg", label: "text-muted" },
+// A hard bar on the left in the category colour, rather than a pastel fill.
+// It keeps the card white and the type crisp while still being scannable.
+const BAR: Record<Tag, string> = {
+  school: "border-l-school",
+  sports: "border-l-sports",
+  other: "border-l-muted",
+};
+const LABEL: Record<Tag, string> = {
+  school: "text-school",
+  sports: "text-sports",
+  other: "text-muted",
 };
 
 function EventCard({ event, tag, timeZone }: { event: CalendarEvent; tag: Tag; timeZone: string }) {
-  const style = CARD_STYLES[tag];
-  // Google hides events it considers deleted, so we mark cancellations by
+  // Google hides events it treats as deleted, so we mark cancellations by
   // renaming them. Either signal counts.
   const cancelled = event.status === "cancelled" || isCancelledTitle(event.summary);
+
   return (
-    <li className={`rounded-md px-2 py-1.5 ${style.card} ${cancelled ? "opacity-60" : ""}`}>
-      {/* Small uppercase label: which calendar (class or sport) it came from. */}
-      <p className={`truncate text-[11px] font-bold uppercase tracking-wider ${style.label}`}>{event.calendarName}</p>
+    <li className={`border-t border-line border-l-[3px] px-3 py-2 ${BAR[tag]} ${cancelled ? "opacity-55" : ""}`}>
+      <p className={`truncate text-[10px] font-bold uppercase tracking-widest ${LABEL[tag]}`}>{event.calendarName}</p>
       <p className={`font-semibold leading-snug ${cancelled ? "line-through" : ""}`}>{event.summary ?? "(no title)"}</p>
-      <p className="font-heading text-sm font-semibold tabular-nums text-muted">
-        {cancelled ? "Cancelled" : formatEventTime(event, timeZone)}
-      </p>
+      <p className="nums text-sm text-muted">{cancelled ? "Cancelled" : formatEventTime(event, timeZone)}</p>
       {event.location && <p className="truncate text-xs text-muted">{event.location}</p>}
     </li>
   );

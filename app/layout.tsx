@@ -1,19 +1,20 @@
 import type { Metadata } from "next";
-import { Barlow_Condensed, Source_Sans_3 } from "next/font/google";
+import { Instrument_Sans, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 
-// Fonts from the design brief. next/font downloads them at build time and
-// exposes them as CSS variables that globals.css picks up.
-const barlow = Barlow_Condensed({
-  variable: "--font-barlow",
+// A sharp display serif for the wordmark, headings and day numbers, paired with
+// a clean grotesque for everything you actually read. next/font downloads both
+// at build time and exposes them as CSS variables that globals.css picks up.
+const displaySerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
   subsets: ["latin"],
-  weight: ["600", "700"],
+  weight: ["400"],
 });
 
-const sourceSans = Source_Sans_3({
-  variable: "--font-source-sans",
+const bodySans = Instrument_Sans({
+  variable: "--font-instrument-sans",
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${barlow.variable} ${sourceSans.variable} h-full antialiased`}>
+    <html lang="en" className={`${displaySerif.variable} ${bodySans.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

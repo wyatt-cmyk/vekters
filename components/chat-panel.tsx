@@ -5,6 +5,7 @@
 // the server (which holds the API key) talks to Claude.
 
 import { useEffect, useRef, useState } from "react";
+import { Check, CornerDownLeft, X } from "lucide-react";
 import { confirmProposal } from "@/app/actions";
 import { cancelledTitle, changedFields, describeWhen, type EventProposal } from "@/lib/proposals";
 
@@ -102,19 +103,19 @@ export function ChatPanel() {
 
   return (
     <aside className="order-first flex max-h-[70vh] flex-col border-b border-line bg-surface xl:order-none xl:max-h-none xl:w-[380px] xl:shrink-0 xl:border-b-0 xl:border-l">
-      <h2 className="border-b border-line px-4 py-3 font-heading text-xl font-bold uppercase tracking-wide">AI Assistant</h2>
+      <h2 className="border-b border-line px-4 py-3 font-display text-2xl leading-none tracking-tight">Assistant</h2>
 
       <div ref={listRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4" aria-live="polite">
         {items.length === 0 && (
           <div className="text-sm text-muted">
-            <p>Paste a text from your coach or teacher and I&apos;ll turn it into calendar events. Nothing is added until you tap Confirm.</p>
+            <p>Paste a text from your coach or teacher. Nothing changes until you tap Confirm.</p>
             <p className="mt-3 font-semibold text-ink">Try:</p>
             <ul className="mt-1 flex flex-col gap-2">
               {EXAMPLES.map((example) => (
                 <li key={example}>
                   <button
                     onClick={() => setInput(example)}
-                    className="min-h-11 w-full rounded-md border border-line px-3 py-2 text-left hover:bg-bg"
+                    className="min-h-11 w-full border border-line px-3 py-2 text-left hover:border-ink"
                   >
                     {example}
                   </button>
@@ -127,7 +128,7 @@ export function ChatPanel() {
         {items.map((item) => {
           if (item.kind === "user") {
             return (
-              <p key={item.id} className="ml-8 whitespace-pre-wrap rounded-lg bg-ink px-3 py-2 text-white">
+              <p key={item.id} className="ml-8 whitespace-pre-wrap bg-ink px-3 py-2 text-white">
                 {item.text}
               </p>
             );
@@ -136,8 +137,8 @@ export function ChatPanel() {
             return (
               <p
                 key={item.id}
-                className={`mr-8 whitespace-pre-wrap rounded-lg px-3 py-2 ${
-                  item.isError ? "border border-warn-line bg-warn-fill text-warn" : "bg-bg"
+                className={`mr-8 whitespace-pre-wrap px-3 py-2 ${
+                  item.isError ? "border border-warn-line border-l-4 border-l-warn bg-warn-fill text-warn" : "border-l-2 border-l-line pl-3"
                 }`}
               >
                 {item.text}
@@ -154,8 +155,9 @@ export function ChatPanel() {
         <div className="border-t border-line px-3 py-2">
           <button
             onClick={confirmAll}
-            className="min-h-11 w-full rounded-md bg-ink px-4 font-semibold text-white hover:opacity-90"
+            className="flex min-h-11 w-full items-center justify-center gap-2 bg-ink px-4 font-semibold text-white hover:bg-ink/90"
           >
+            <Check size={16} strokeWidth={2.5} />
             Confirm all {pendingCount}
           </button>
         </div>
@@ -184,14 +186,16 @@ export function ChatPanel() {
           }}
           rows={3}
           placeholder="Paste a message, or ask about your week…"
-          className="w-full resize-none rounded-md border border-line bg-surface px-3 py-2 focus:border-ink focus:outline-none"
+          className="w-full resize-none border border-line bg-surface px-3 py-2 focus:border-ink focus:outline-none"
         />
         <div className="mt-2 flex items-center justify-between gap-2">
-          <span className="text-xs text-muted">Ctrl + Enter to send</span>
+          <span className="flex items-center gap-1 text-xs text-muted">
+            <CornerDownLeft size={13} strokeWidth={2} /> Ctrl + Enter to send
+          </span>
           <button
             type="submit"
             disabled={busy || !input.trim()}
-            className="min-h-11 rounded-md bg-ink px-5 font-semibold text-white hover:opacity-90 disabled:opacity-40"
+            className="min-h-11 bg-ink px-6 font-semibold text-white hover:bg-ink/90 disabled:opacity-40"
           >
             Send
           </button>
@@ -201,10 +205,16 @@ export function ChatPanel() {
   );
 }
 
-const TAG_STYLE = {
-  school: "bg-school-fill text-school",
-  sports: "bg-sports-fill text-sports",
-  other: "bg-bg text-muted",
+// Same language as the week grid: a hard left bar in the category colour.
+const BAR = {
+  school: "border-l-school",
+  sports: "border-l-sports",
+  other: "border-l-muted",
+};
+const LABEL = {
+  school: "text-school",
+  sports: "text-sports",
+  other: "text-muted",
 };
 
 // What the card calls itself, and what it says once it's done.
@@ -224,12 +234,12 @@ function ProposalCard({
   const changed = changedFields(p);
 
   return (
-    <div className={`rounded-lg border border-line bg-surface ${item.status === "dismissed" ? "opacity-50" : ""}`}>
-      <div className={`rounded-t-lg px-3 py-2 ${TAG_STYLE[p.tag]}`}>
-        <p className="text-[11px] font-bold uppercase tracking-wider">
+    <div className={`border border-line border-l-[3px] bg-surface ${BAR[p.tag]} ${item.status === "dismissed" ? "opacity-50" : ""}`}>
+      <div className="px-3 pt-2">
+        <p className={`text-[10px] font-bold uppercase tracking-widest ${LABEL[p.tag]}`}>
           {ACTION_LABEL[p.action]} · {p.calendarName}
         </p>
-        <p className="font-semibold text-ink">{p.title}</p>
+        <p className="font-semibold">{p.title}</p>
       </div>
 
       <div className="px-3 py-2 text-sm">
@@ -237,12 +247,12 @@ function ProposalCard({
           <>
             {/* Show what it was, then what it becomes, so nothing is a surprise. */}
             <p className="text-muted line-through">{describeWhen(p.before)}</p>
-            <p className="font-heading text-base font-semibold">{describeWhen(p)}</p>
+            <p className="nums font-semibold">{describeWhen(p)}</p>
             {p.before.title !== p.title && <p className="text-muted">Renamed from &ldquo;{p.before.title}&rdquo;</p>}
             {changed.length > 0 && <p className="mt-1 text-muted">Changes the {changed.join(", ")}.</p>}
           </>
         ) : (
-          <p className="font-heading text-base font-semibold">{describeWhen(p)}</p>
+          <p className="nums font-semibold">{describeWhen(p)}</p>
         )}
 
         {p.location && <p className="text-muted">{p.location}</p>}
@@ -255,7 +265,7 @@ function ProposalCard({
         )}
 
         {p.endTimeDefaulted && p.action !== "cancel" && (
-          <p className="mt-2 rounded-md border border-warn-line bg-warn-fill px-2 py-1 text-warn">
+          <p className="mt-2 border border-warn-line bg-warn-fill px-2 py-1 text-warn">
             No end time was given, so it&apos;s set to 2 hours.
           </p>
         )}
@@ -263,23 +273,29 @@ function ProposalCard({
       </div>
 
       <div className="flex gap-2 px-3 pb-3">
-        {item.status === "added" && <p className="font-semibold text-sports">✓ {DONE_LABEL[p.action]}</p>}
+        {item.status === "added" && (
+          <p className="flex items-center gap-1.5 font-semibold text-sports">
+            <Check size={16} strokeWidth={2.5} /> {DONE_LABEL[p.action]}
+          </p>
+        )}
         {item.status === "dismissed" && <p className="text-muted">Dismissed</p>}
         {(item.status === "pending" || item.status === "saving") && (
           <>
             <button
               onClick={() => onConfirm(p)}
               disabled={item.status === "saving"}
-              className="min-h-11 flex-1 rounded-md bg-ink font-semibold text-white hover:opacity-90 disabled:opacity-50"
+              className="flex min-h-11 flex-1 items-center justify-center gap-2 bg-ink font-semibold text-white hover:bg-ink/90 disabled:opacity-50"
             >
-              {item.status === "saving" ? "Saving…" : "Confirm"}
+              {item.status === "saving" ? "Saving…" : <>
+                <Check size={16} strokeWidth={2.5} /> Confirm
+              </>}
             </button>
             <button
               onClick={() => onDismiss(p)}
               disabled={item.status === "saving"}
-              className="min-h-11 rounded-md border border-line px-4 font-semibold hover:bg-bg"
+              className="flex min-h-11 items-center gap-1.5 border border-line px-4 font-semibold hover:border-ink"
             >
-              Dismiss
+              <X size={15} strokeWidth={2.5} /> Dismiss
             </button>
           </>
         )}

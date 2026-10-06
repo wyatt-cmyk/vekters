@@ -1,29 +1,52 @@
 @import "tailwindcss";
 
-/* Design tokens from CLAUDE.md. Tailwind 4 turns each --color-* into utility
-   classes, e.g. bg-surface, text-muted, border-line, bg-school-fill. */
+/* Design tokens. Tailwind 4 turns each --color-* into utilities, so
+   --color-accent gives you bg-accent, text-accent, border-accent.
+
+   The system: one dominant grounding tone (ink, used for the header bar and
+   primary buttons), stark neutrals around it, and a single sharp accent (volt)
+   used sparingly so it always means "this is the thing right now". */
 @theme inline {
-  --color-bg: #f3f1eb;
+  --color-bg: #f2f3f5; /* cool page grey, deliberately not beige */
   --color-surface: #ffffff;
-  --color-ink: #1c1f24;
-  --color-muted: #5a5f66;
-  --color-line: #ddd9cf;
+  --color-ink: #11131a; /* grounding tone */
+  --color-muted: #5b6069;
+  --color-line: #dbdee3;
+  --color-line-strong: #11131a;
 
-  --color-school: #2f4e8c;
-  --color-school-fill: #e7ecf6;
-  --color-sports: #2a5f3e;
-  --color-sports-fill: #e3f0e7;
+  --color-accent: #d7ff3e; /* volt: today, active states, nothing else */
+  --color-accent-ink: #11131a;
 
-  --color-warn: #6b3a08;
-  --color-warn-fill: #fbefd9;
-  --color-warn-line: #e9c98f;
+  --color-school: #1b45b0;
+  --color-school-fill: #eaeffc;
+  --color-sports: #0f7a4a;
+  --color-sports-fill: #e6f4ec;
 
-  --font-sans: var(--font-source-sans), sans-serif;
-  --font-heading: var(--font-barlow), sans-serif;
+  --color-warn: #8a3b00;
+  --color-warn-fill: #fff1dd;
+  --color-warn-line: #e8b878;
+
+  --font-sans: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-instrument-serif), ui-serif, Georgia, serif;
 }
 
 body {
   background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-sans);
+}
+
+/* Square corners on form controls, which browsers round by default. The rest of
+   the UI simply doesn't use rounding: it reads as deliberate, and keeps the week
+   looking like a printed schedule rather than a deck of cards. */
+button,
+input,
+textarea,
+select {
+  border-radius: 0;
+}
+
+/* Tabular figures so times and dates line up column to column. */
+.nums {
+  font-variant-numeric: tabular-nums;
 }

@@ -35,10 +35,11 @@ export default async function ImportPage() {
   return (
     <>
       {header}
-      <main className="mx-auto w-full max-w-3xl p-4">
-        <h1 className="font-heading text-3xl font-bold uppercase tracking-wide">Import a schedule</h1>
-        <p className="mb-4 text-muted">
-          The AI finds every event, then you check which ones to add. Nothing is added until you tap Add.
+      <main className="mx-auto w-full max-w-3xl px-4 py-8">
+        <h1 className="font-display text-4xl leading-none tracking-tight">Import a schedule</h1>
+        <p className="mb-6 mt-2 max-w-prose text-muted">
+          Paste a season schedule or upload a photo of one. Every event gets found, then you pick which to keep.
+          Nothing is added until you tap Add.
         </p>
         <div className="mb-4 empty:mb-0">
           <SetupWarnings missingScopes={data.missingScopes} />
