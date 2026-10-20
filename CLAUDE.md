@@ -73,7 +73,7 @@ Today, the now line and primary buttons are ink by default. The Settings colour 
 ### Build phases
 1. **Done.** Tokens, fonts, brand assets, the three-column shell, the assistant rehomed to the rail, and the event block reshaped to the design (colour dot, title, time).
 2. **Done.** The week hour grid: 64px an hour, time gutter, sticky header, all-day row, overlap lanes, now line on today, click an empty hour to create.
-3. Day and Month views, the mini calendar, date jumping, the view switcher.
+3. **Done.** Day and Month views, the mini calendar, date jumping, the view switcher.
 4. The details panel moves into the rail as a second tab, replacing the modal dialog.
 5. Search, per-calendar visibility toggles, and remapping calendar colours to the five pastels.
 6. Mobile day agenda and bottom sheet below 768px.
@@ -117,6 +117,8 @@ Drag to reschedule or resize, Tasks, a tablet layout with a collapsible sidebar.
 - `lib/week.ts` — date helpers. Days are plain "YYYY-MM-DD" strings; the week start is a setting.
 - `lib/week-layout.ts` — pure maths for the hour grid: minutes within a day, overlap lanes (ported from the design's `layout()`), the hour window, pixel boxes.
 - `components/week-client.tsx` — the only client bits of the grid: the now line and the opening scroll.
+- `components/month-grid.tsx` — six rows of seven days, three chips a day plus "+N more".
+- `components/mini-calendar.tsx` — the small month in the sidebar.
 - `lib/tags.ts` — calendar tags, stored in a cookie (per browser, no database yet), with name-based guesses.
 - `.env.local` — secrets (never committed). See `.env.local.example` and `SETUP.md`.
 
@@ -199,3 +201,14 @@ In a cookie, like the calendar tags. Each person gets their own, because nobody 
 - **An event block tints itself** from its calendar's colour through `color-mix` in the `.ev` rule, so one inline `--ev` drives the fill, the border and the hover. The selected block gets the design's 1.5px inset outline.
 - **Empty hours are links** to `?new=1&date=…&at=HH:MM`, which opens the form with that hour filled in and a one-hour end, as the handoff specifies. A blank end still means two hours, which is the rule the assistant and the importer use. Those links sit outside the tab order on purpose: 112 of them would swamp keyboard navigation, and New event reaches the same form.
 - **The now line and the opening scroll** are the only parts that need the browser. The line renders nothing until mounted, so the server and the browser can't disagree about the time, and it moves every minute.
+
+## Three views, one URL
+`app/page.tsx` renders Day, Week and Month. Everything on screen comes from the query string, so any view can be bookmarked, shared or reached with the back button.
+
+- `?view=day|week|month` (week is the default and is left out of the URL), `?d=YYYY-MM-DD` for the date the view is anchored on (today when absent), `?hide=` for the filter chips, `?mc=` for the month the mini calendar is showing.
+- **One fetch per load.** `loadRange()` takes a callback instead of a range, because the range depends on today and on the time zone, and both arrive with the calendars. The callback runs after that single trip.
+- **Day view is the week grid with one column.** `WeekGrid` takes however many days it's given and builds its CSS grid template from the count; nothing about Day view is special-cased.
+- **Month is always six rows**, so its height doesn't jump between months. Rows have a floor of 118px, enough for a date, three chips and the "+N more"; `auto-rows-fr` alone lets a row collapse under its content.
+- **The arrows follow the view**: a day, a week, or a whole month. Stepping by a week keeps the weekday, because the anchor is a real date.
+- **Tapping a day heading, or a date in Month view, opens that day on its own.** The mini calendar jumps anywhere and shades the days the main view is showing; today keeps its accent circle rather than the shade.
+- **Building URLs:** `buildHref` takes the core bits (`d`, `view`, `hidden`) separately from `extra`, so a caller can't half-override the filters. That bug bit once: a chip that cleared the last filter left `hide=` in the URL.

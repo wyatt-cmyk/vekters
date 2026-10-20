@@ -8,6 +8,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { CalendarDays, FileInput, LogOut, Settings, Sun } from "lucide-react";
 import { signOut } from "@/auth";
+import { MiniCalendar } from "./mini-calendar";
+import type { DayKey } from "@/lib/week";
 
 type CalendarRow = { id: string; name: string; color: string };
 
@@ -17,12 +19,23 @@ type Props = {
   calendars: CalendarRow[];
   active: "calendar" | "import" | "settings";
   todayHref: string;
+  // Only the calendar page has a date to centre the mini calendar on.
+  mini?: {
+    month: DayKey;
+    today: DayKey;
+    weekStart: "mon" | "sun";
+    visibleFrom: DayKey;
+    visibleTo: DayKey;
+    accent: string;
+    dayHref: (day: DayKey) => string;
+    monthHref: (month: DayKey) => string;
+  };
 };
 
 const NAV_BASE =
   "flex min-h-10 items-center gap-2.5 rounded-control px-3 text-[14px] transition-colors duration-[var(--vk-dur-fast)]";
 
-export function Sidebar({ mode, userName, calendars, active, todayHref }: Props) {
+export function Sidebar({ mode, userName, calendars, active, todayHref, mini }: Props) {
   return (
     <aside className="flex w-sidebar shrink-0 flex-col border-r border-line bg-bg">
       <div className="px-5 pb-6 pt-6">
@@ -53,7 +66,13 @@ export function Sidebar({ mode, userName, calendars, active, todayHref }: Props)
         </NavItem>
       </nav>
 
-      <div className="mt-8 px-5">
+      {mini && (
+        <div className="mt-7 px-4">
+          <MiniCalendar {...mini} />
+        </div>
+      )}
+
+      <div className="mt-7 px-5">
         <h2 className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted">My calendars</h2>
         <ul className="mt-3 flex flex-col gap-2.5">
           {calendars.map((cal) => (

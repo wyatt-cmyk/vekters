@@ -1,34 +1,68 @@
-// The week view (home page). It's a server component, so all calendar data is
-// fetched on the server and the Google access token never reaches the browser.
+// The calendar. A server component, so all calendar data is fetched on the
+// server and the Google access token never reaches the browser.
 //
-// The URL controls what's shown, so every view can be bookmarked or shared:
-//   /?week=2026-09-28               -> the week containing that date
-//   /?week=2026-09-28&hide=sports   -> same week with Sports events hidden
+// The URL says everything about what's on screen, so any view can be
+// bookmarked, shared, or reached with the back button:
+//   /?view=day&d=2026-10-20          a single day
+//   /?view=month&d=2026-10-20        that month
+//   /?d=2026-10-20&hide=sports       that week, Sports hidden
+//   /?cal=…&ev=…                     an event open (see event-dialog.tsx)
 
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { ChatPanel } from "@/components/chat-panel";
+import { DeleteConfirm, EventDetail, EventForm } from "@/components/event-dialog";
+import { Landing } from "@/components/landing";
+import { MonthGrid } from "@/components/month-grid";
 import { Notice } from "@/components/notice";
 import { SetupWarnings } from "@/components/setup-warnings";
-import { Landing } from "@/components/landing";
-import { DeleteConfirm, EventDetail, EventForm } from "@/components/event-dialog";
 import { Sidebar } from "@/components/sidebar";
 import { WeekGrid } from "@/components/week-grid";
-import { findEvent, loadWeek } from "@/lib/calendar-data";
+import { findEvent, loadRange } from "@/lib/calendar-data";
 import { canWrite } from "@/lib/google-calendar";
 import { snapshotOf } from "@/lib/proposals";
 import { accentHex, colorsForCalendars, readSettings } from "@/lib/settings";
 import { isTag, readSavedTags, TAG_LABELS, tagsForCalendars, type Tag } from "@/lib/tags";
-import { addDays, formatMonthTitle, formatWeekRange, groupByDay, weekDays, type DayKey } from "@/lib/week";
+import {
+  addDays,
+  addMonths,
+  formatFullDate,
+  formatMonthOnly,
+  formatMonthTitle,
+  formatWeekRange,
+  groupByDay,
+  isDayKey,
+  startOfMonth,
+  startOfWeek,
+  type DayKey,
+} from "@/lib/week";
 
-export default async function WeekPage({ searchParams }: PageProps<"/">) {
+const VIEWS = ["day", "week", "month"] as const;
+type View = (typeof VIEWS)[number];
+const isView = (value: unknown): value is View => VIEWS.includes(value as View);
+
+export default async function CalendarPage({ searchParams }: PageProps<"/">) {
   const params = await searchParams;
-  const requestedWeek = typeof params.week === "string" ? params.week : undefined;
-  const hidden = parseHidden(params.hide);
   const text = (key: string) => (typeof params[key] === "string" ? (params[key] as string) : undefined);
 
+  const view: View = isView(text("view")) ? (text("view") as View) : "week";
+  const requested = isDayKey(text("d")) ? text("d")! : undefined;
+  const hidden = parseHidden(params.hide);
+
   const settings = await readSettings();
-  const data = await loadWeek(requestedWeek, settings.weekStart);
+  const weekStart = settings.weekStart;
+
+  // One trip: work out the window from today and the time zone, then fetch it.
+  const data = await loadRange(({ today }) => {
+    const anchor = requested ?? today;
+    if (view === "day") return { firstDay: anchor, lastDay: anchor };
+    if (view === "month") {
+      const first = startOfWeek(startOfMonth(anchor), weekStart);
+      return { firstDay: first, lastDay: addDays(first, 41) };
+    }
+    const first = startOfWeek(anchor, weekStart);
+    return { firstDay: first, lastDay: addDays(first, 6) };
+  });
 
   // Not signed in: show the front door rather than a bare sign-in box.
   if (data.status === "signed-out") return <Landing />;
@@ -41,39 +75,39 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
     );
   }
 
-  // Work out each calendar's tag, then drop events from hidden tags.
+  const anchor = requested ?? data.today;
+  const days = daysBetween(data.firstDay, data.lastDay);
+
   const tagOf = tagsForCalendars(data.calendars, await readSavedTags());
   const colorOf = colorsForCalendars(settings, tagOf);
   const accent = accentHex(settings);
   const visibleEvents = data.events.filter((event) => !hidden.has(tagOf.get(event.calendarId) ?? "other"));
-  const days = weekDays(data.monday);
   const eventsByDay = groupByDay(visibleEvents, days, data.timeZone);
 
-  // Only show the "Other" chip if some calendar is actually tagged Other.
+  // Only offer the "Other" chip when some calendar actually is Other.
   const chipTags: Tag[] = ["school", "sports"];
   if ([...tagOf.values()].includes("other")) chipTags.push("other");
 
-  const isThisWeek = days.includes(data.today);
+  const showsToday = data.firstDay <= data.today && data.today <= data.lastDay;
 
-  // Every link keeps the week and the filters, so closing a dialog or saving an
-  // event puts you back exactly where you were.
-  const base = (extra: Record<string, string> = {}) => buildHref(requestedWeek ? data.monday : undefined, hidden, extra);
-  const closeHref = base();
+  // Every link keeps the view, the date and the filters, so closing a dialog
+  // or saving an event puts you back exactly where you were.
+  const href = (changes: { d?: DayKey; view?: View } & Record<string, string | undefined> = {}) => {
+    const { d, view: nextView, ...extra } = changes;
+    return buildHref({ d: d ?? anchor, view: nextView ?? view, hidden, extra });
+  };
+  const closeHref = href();
+
+  // Which way the arrows move depends on the view.
+  const step = (direction: 1 | -1) =>
+    view === "month" ? addMonths(anchor, direction) : addDays(anchor, direction * (view === "day" ? 1 : 7));
 
   const writable = data.calendars.filter(canWrite);
   const calendarOptions = writable.map((c) => ({ id: c.id, name: c.summary }));
-  const selected =
-    text("cal") && text("ev") ? await findEvent(data, text("cal")!, text("ev")!) : null;
+  const selected = text("cal") && text("ev") ? await findEvent(data, text("cal")!, text("ev")!) : null;
 
-  const calendarRows = data.calendars.map((c) => ({
-    id: c.id,
-    name: c.summary,
-    color: colorOf.get(c.id) ?? "#6b6b66",
-  }));
+  const miniMonth = isDayKey(text("mc")) ? text("mc")! : anchor;
 
-  // The shell the design fixes: 252px sidebar, flexible calendar, 316px rail.
-  // The assistant lives in the rail; the event details panel joins it there in
-  // a later phase, and until then details stay in the dialog below.
   return (
     // The chosen colour overrides the --color-accent token for this page, so
     // every bg-accent / text-accent below picks it up with no extra wiring.
@@ -83,9 +117,23 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
           <Sidebar
             mode={data.mode}
             userName={data.userName}
-            calendars={calendarRows}
+            calendars={data.calendars.map((c) => ({
+              id: c.id,
+              name: c.summary,
+              color: colorOf.get(c.id) ?? "#6b6b66",
+            }))}
             active="calendar"
-            todayHref={buildHref(undefined, hidden)}
+            todayHref={buildHref({ view, hidden })}
+            mini={{
+              month: miniMonth,
+              today: data.today,
+              weekStart,
+              visibleFrom: data.firstDay,
+              visibleTo: data.lastDay,
+              accent,
+              dayHref: (day) => href({ d: day, mc: undefined }),
+              monthHref: (month) => href({ mc: month }),
+            }}
           />
         </div>
 
@@ -94,35 +142,58 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
             <div className="min-w-0">
               <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted">Your calendar</p>
               <h1 className="font-display mt-1 text-[clamp(2rem,3.4vw,3.375rem)] leading-none tracking-[-0.01em]">
-                {formatMonthTitle(days[0], days[6])}
+                {view === "week" ? formatMonthTitle(days[0], days[days.length - 1]) : formatMonthOnly(anchor)}
               </h1>
-              <p className="nums mt-1.5 text-[13px] text-muted">{formatWeekRange(data.monday)}</p>
+              <p className="nums mt-1.5 text-[13px] text-muted">
+                {view === "day" ? formatFullDate(anchor) : view === "week" ? formatWeekRange(data.firstDay) : " "}
+              </p>
             </div>
 
             <div className="ml-auto flex flex-wrap items-center gap-2">
-              {!isThisWeek && (
+              {!showsToday && (
                 <Link
-                  href={weekHref(undefined, hidden)}
+                  href={buildHref({ view, hidden })}
                   className="flex h-9 items-center rounded-control border border-line-strong bg-surface px-4 text-[14px] transition-colors duration-[var(--vk-dur-fast)] hover:bg-hover"
                 >
                   Today
                 </Link>
               )}
+
               <div className="flex">
-                <NavLink href={weekHref(addDays(data.monday, -7), hidden)} label="Previous week" side="left">
+                <Arrow href={href({ d: step(-1) })} label={`Previous ${view}`} side="left">
                   <ChevronLeft size={17} strokeWidth={1.8} />
-                </NavLink>
-                <NavLink href={weekHref(addDays(data.monday, 7), hidden)} label="Next week" side="right">
+                </Arrow>
+                <Arrow href={href({ d: step(1) })} label={`Next ${view}`} side="right">
                   <ChevronRight size={17} strokeWidth={1.8} />
-                </NavLink>
+                </Arrow>
+              </div>
+
+              <div className="flex rounded-control bg-nav-active p-[3px]" role="group" aria-label="Choose a view">
+                {VIEWS.map((option) => (
+                  <Link
+                    key={option}
+                    href={href({ view: option })}
+                    aria-current={view === option ? "true" : undefined}
+                    className={`flex h-[30px] items-center rounded-[6px] px-3 text-[13px] capitalize transition-colors duration-[var(--vk-dur-fast)] ${
+                      view === option ? "bg-surface text-ink" : "text-muted hover:text-ink"
+                    }`}
+                  >
+                    {option}
+                  </Link>
+                ))}
               </div>
 
               {chipTags.map((tag) => (
-                <FilterChip key={tag} tag={tag} monday={data.monday} hidden={hidden} />
+                <FilterChip
+                  key={tag}
+                  tag={tag}
+                  hidden={hidden}
+                  hrefFor={(next) => buildHref({ d: anchor, view, hidden: next })}
+                />
               ))}
 
               <Link
-                href={base({ new: "1" })}
+                href={href({ new: "1", date: anchor })}
                 className="flex h-9 items-center gap-2 rounded-control bg-ink px-4 text-[14px] text-white transition-colors duration-[var(--vk-dur-fast)] hover:bg-black"
               >
                 <Plus size={15} strokeWidth={2} />
@@ -141,18 +212,36 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
               </Notice>
             )}
 
-            <WeekGrid
-              days={days}
-              eventsByDay={eventsByDay}
-              today={data.today}
-              timeZone={data.timeZone}
-              colorOf={colorOf}
-              clock={settings.clock}
-              accent={accent}
-              eventHref={(event) => base({ cal: event.calendarId, ev: event.id })}
-              slotHref={(day, time) => base({ new: "1", date: day, at: time })}
-              selectedId={selected?.id}
-            />
+            {view === "month" ? (
+              <MonthGrid
+                days={days}
+                month={anchor}
+                eventsByDay={eventsByDay}
+                today={data.today}
+                timeZone={data.timeZone}
+                clock={settings.clock}
+                colorOf={colorOf}
+                accent={accent}
+                weekStart={weekStart}
+                eventHref={(event) => href({ cal: event.calendarId, ev: event.id })}
+                dayHref={(day) => href({ d: day, view: "day" })}
+                selectedId={selected?.id}
+              />
+            ) : (
+              <WeekGrid
+                days={days}
+                eventsByDay={eventsByDay}
+                today={data.today}
+                timeZone={data.timeZone}
+                colorOf={colorOf}
+                clock={settings.clock}
+                accent={accent}
+                eventHref={(event) => href({ cal: event.calendarId, ev: event.id })}
+                slotHref={(day, time) => href({ new: "1", date: day, at: time })}
+                dayHref={view === "week" ? (day) => href({ d: day, view: "day" }) : undefined}
+                selectedId={selected?.id}
+              />
+            )}
 
             <p className="shrink-0 text-[12px] text-muted">Times shown in {data.timeZone}.</p>
           </div>
@@ -168,17 +257,17 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
           closeHref={closeHref}
           returnTo={closeHref}
           defaultCalendarId={(writable.find((c) => c.primary) ?? writable[0])?.id}
-          defaultDate={text("date") ?? data.today}
+          defaultDate={text("date") ?? anchor}
           defaultStart={text("at")}
         />
       )}
 
-      {/* An existing event: details, or the edit form */}
+      {/* An existing event: details, the edit form, or the delete check */}
       {selected && text("del") === "1" && (
         <DeleteConfirm
           event={selected}
           timeZone={data.timeZone}
-          backHref={base({ cal: selected.calendarId, ev: selected.id })}
+          backHref={href({ cal: selected.calendarId, ev: selected.id })}
           returnTo={closeHref}
         />
       )}
@@ -188,9 +277,9 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
         (text("edit") === "1" ? (
           <EventForm
             calendars={calendarOptions}
-            closeHref={base({ cal: selected.calendarId, ev: selected.id })}
+            closeHref={href({ cal: selected.calendarId, ev: selected.id })}
             returnTo={closeHref}
-            defaultDate={data.today}
+            defaultDate={anchor}
             event={{
               id: selected.id,
               calendarId: selected.calendarId,
@@ -204,8 +293,8 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
             tag={tagOf.get(selected.calendarId) ?? "other"}
             timeZone={data.timeZone}
             closeHref={closeHref}
-            editHref={base({ cal: selected.calendarId, ev: selected.id, edit: "1" })}
-            deleteHref={base({ cal: selected.calendarId, ev: selected.id, del: "1" })}
+            editHref={href({ cal: selected.calendarId, ev: selected.id, edit: "1" })}
+            deleteHref={href({ cal: selected.calendarId, ev: selected.id, del: "1" })}
             canEdit={writable.some((c) => c.id === selected.calendarId)}
           />
         ))}
@@ -215,27 +304,41 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
 
 /* ---------- helpers for this page ---------- */
 
+function daysBetween(first: DayKey, last: DayKey) {
+  const days: DayKey[] = [];
+  for (let day = first; day <= last; day = addDays(day, 1)) days.push(day);
+  return days;
+}
+
 // "?hide=sports,other" -> Set { "sports", "other" }. Unknown values are ignored.
 function parseHidden(value: string | string[] | undefined): Set<Tag> {
   const text = Array.isArray(value) ? value.join(",") : (value ?? "");
   return new Set(text.split(",").filter(isTag));
 }
 
-// Builds a URL for a week + hidden tags, plus anything else (the dialog params).
-// No week means "this week".
-function buildHref(week: DayKey | undefined, hidden: Set<Tag>, extra: Record<string, string> = {}) {
+// Builds a URL. Leaving `d` out means today; leaving `view` out means the week.
+function buildHref({
+  d,
+  view,
+  hidden,
+  extra = {},
+}: {
+  d?: DayKey;
+  view?: View;
+  hidden: Set<Tag>;
+  extra?: Record<string, string | undefined>;
+}) {
   const params = new URLSearchParams();
-  if (week) params.set("week", week);
+  if (d) params.set("d", d);
+  if (view && view !== "week") params.set("view", view);
   if (hidden.size > 0) params.set("hide", [...hidden].join(","));
-  for (const [key, value] of Object.entries(extra)) params.set(key, value);
+  for (const [key, value] of Object.entries(extra)) if (value) params.set(key, value);
   const query = params.toString();
   return query ? `/?${query}` : "/";
 }
 
-const weekHref = (week: DayKey | undefined, hidden: Set<Tag>) => buildHref(week, hidden);
-
 // The two arrows sit together as one control, sharing their middle border.
-function NavLink({
+function Arrow({
   href,
   label,
   side,
@@ -258,15 +361,19 @@ function NavLink({
   );
 }
 
-// A dot in the category colour, so the chip reads even before you read it.
-const DOT: Record<Tag, string> = {
-  school: "bg-school",
-  sports: "bg-sports",
-  other: "bg-muted",
-};
+// A dot in the category colour, so the chip reads before you read it.
+const DOT: Record<Tag, string> = { school: "bg-school", sports: "bg-sports", other: "bg-muted" };
 
 // A chip is a link that toggles its tag in the "hide" list.
-function FilterChip({ tag, monday, hidden }: { tag: Tag; monday: DayKey; hidden: Set<Tag> }) {
+function FilterChip({
+  tag,
+  hidden,
+  hrefFor,
+}: {
+  tag: Tag;
+  hidden: Set<Tag>;
+  hrefFor: (next: Set<Tag>) => string;
+}) {
   const isShown = !hidden.has(tag);
   const next = new Set(hidden);
   if (isShown) next.add(tag);
@@ -274,7 +381,7 @@ function FilterChip({ tag, monday, hidden }: { tag: Tag; monday: DayKey; hidden:
 
   return (
     <Link
-      href={weekHref(monday, next)}
+      href={hrefFor(next)}
       aria-label={`${isShown ? "Hide" : "Show"} ${TAG_LABELS[tag]} events`}
       className={`flex h-9 items-center gap-2 rounded-control border px-3.5 text-[14px] transition-colors duration-[var(--vk-dur-fast)] ${
         isShown ? "border-line-strong bg-surface hover:bg-hover" : "border-line bg-bg text-faint"

@@ -164,3 +164,50 @@ export function formatMonthTitle(firstDay: DayKey, lastDay: DayKey) {
   const last = month(lastDay);
   return first === last ? `${first} ${year}` : `${first} – ${last} ${year}`;
 }
+
+/* ---------- months ---------- */
+
+export function startOfMonth(day: DayKey): DayKey {
+  return `${day.slice(0, 7)}-01`;
+}
+
+// Days in the month containing `day`.
+export function daysInMonth(day: DayKey) {
+  const [y, m] = day.split("-").map(Number);
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+}
+
+// Moves whole months, clamping the date so 31 January plus one month lands on
+// 28 February rather than spilling into March.
+export function addMonths(day: DayKey, n: number): DayKey {
+  const [y, m, d] = day.split("-").map(Number);
+  const target = new Date(Date.UTC(y, m - 1 + n, 1));
+  const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
+  target.setUTCDate(Math.min(d, lastDay));
+  return target.toISOString().slice(0, 10);
+}
+
+export function sameMonth(a: DayKey, b: DayKey) {
+  return a.slice(0, 7) === b.slice(0, 7);
+}
+
+// "October 2026"
+export function formatMonthOnly(day: DayKey) {
+  return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(toUtcDate(day));
+}
+
+// "Tuesday, October 20"
+export function formatFullDate(day: DayKey) {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(toUtcDate(day));
+}
+
+// The single letters above a mini calendar, starting on the chosen day.
+export function weekdayInitials(weekStart: WeekStart) {
+  const base = ["S", "M", "T", "W", "T", "F", "S"];
+  return weekStart === "mon" ? [...base.slice(1), base[0]] : base;
+}

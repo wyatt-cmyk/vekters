@@ -108,6 +108,10 @@ type Loaded<T> = SignedOut | { status: "error"; mode: Mode; userName?: string | 
 export type CalendarsResult = Loaded<Source>;
 export type WeekResult = Loaded<Source & { monday: DayKey; today: DayKey; events: CalendarEvent[]; failedCalendars: string[] }>;
 
+export type RangeResult = Loaded<
+  Source & { firstDay: DayKey; lastDay: DayKey; today: DayKey; events: CalendarEvent[]; failedCalendars: string[] }
+>;
+
 export async function loadCalendars(): Promise<CalendarsResult> {
   try {
     const source = await getSource();
@@ -264,6 +268,29 @@ export async function removeEvent(source: Source, calendarId: string, eventId: s
   const index = added.findIndex((e) => e.id === eventId);
   if (index >= 0) added.splice(index, 1);
   else demoDeleted().add(eventId);
+}
+
+// Everything the Day, Week and Month views need, for any span of days.
+//
+// The range depends on today and on the student's time zone, and both come
+// from the same place as the calendars, so `rangeFor` is a callback: one trip
+// to Google works out the window and fetches it.
+export async function loadRange(
+  rangeFor: (context: { today: DayKey; timeZone: string }) => { firstDay: DayKey; lastDay: DayKey },
+): Promise<RangeResult> {
+  try {
+    const source = await getSource();
+    if (isSignedOut(source)) return source;
+
+    const today = todayIn(source.timeZone);
+    const { firstDay, lastDay } = rangeFor({ today, timeZone: source.timeZone });
+
+    const failedCalendars: string[] = [];
+    const events = await getEventsBetween(source, firstDay, lastDay, failedCalendars);
+    return { status: "ok", ...source, firstDay, lastDay, today, events, failedCalendars };
+  } catch (err) {
+    return { status: "error", mode: isDemoMode() ? "demo" : "google", message: errorMessage(err) };
+  }
 }
 
 function errorMessage(err: unknown) {

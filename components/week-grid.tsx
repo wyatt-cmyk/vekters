@@ -32,12 +32,17 @@ type Props = {
   eventHref: (event: CalendarEvent) => string;
   // Where tapping an empty hour goes: a new event starting at that hour.
   slotHref: (day: DayKey, time: string) => string;
+  // Tapping a day heading opens that day on its own. Absent in Day view.
+  dayHref?: (day: DayKey) => string;
   selectedId?: string;
 };
 
-// 64px gutter, then seven equal day columns. The three rows share it so the
-// headings, the all-day row and the grid all line up.
-const COLUMNS = { gridTemplateColumns: "var(--spacing-gutter) repeat(7, minmax(0, 1fr))" };
+// 64px gutter, then one equal column per day. The three rows share the same
+// template so the headings, the all-day row and the body stay aligned. Day
+// view is this grid with a single column.
+const columnsFor = (count: number) => ({
+  gridTemplateColumns: `var(--spacing-gutter) repeat(${count}, minmax(0, 1fr))`,
+});
 
 export function WeekGrid({
   days,
@@ -49,6 +54,7 @@ export function WeekGrid({
   accent,
   eventHref,
   slotHref,
+  dayHref,
   selectedId,
 }: Props) {
   const placedByDay = new Map(days.map((day) => [day, placeDay(eventsByDay.get(day) ?? [], day, timeZone)]));
@@ -57,6 +63,7 @@ export function WeekGrid({
   const { startHour, endHour } = hourWindow(placedByDay);
   const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
   const hasAllDay = [...allDayByDay.values()].some((list) => list.length > 0);
+  const COLUMNS = columnsFor(days.length);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-card border border-line bg-surface">
@@ -72,28 +79,13 @@ export function WeekGrid({
             {days.map((day) => {
               const isToday = day === today;
               return (
-                <div
+                <DayHeading
                   key={day}
-                  className={`flex items-center gap-2 border-l border-line px-3 py-2.5 ${isToday ? "bg-today-col" : ""}`}
-                >
-                  <span
-                    className={`text-[12px] font-medium uppercase tracking-[0.08em] ${
-                      isToday ? "text-ink" : "text-muted"
-                    }`}
-                  >
-                    {formatWeekday(day)}
-                  </span>
-                  {isToday ? (
-                    <span
-                      className="nums inline-grid size-[26px] place-items-center rounded-full text-[15px] text-white"
-                      style={{ backgroundColor: accent }}
-                    >
-                      {formatDayNumber(day)}
-                    </span>
-                  ) : (
-                    <span className="nums text-[18px]">{formatDayNumber(day)}</span>
-                  )}
-                </div>
+                  day={day}
+                  isToday={isToday}
+                  accent={accent}
+                  href={dayHref?.(day)}
+                />
               );
             })}
           </div>
@@ -180,6 +172,53 @@ export function WeekGrid({
         </div>
       </div>
     </div>
+  );
+}
+
+// The heading for one day column. In Week view it links to that day on its own.
+function DayHeading({
+  day,
+  isToday,
+  accent,
+  href,
+}: {
+  day: DayKey;
+  isToday: boolean;
+  accent: string;
+  href?: string;
+}) {
+  const inner = (
+    <>
+      <span
+        className={`text-[12px] font-medium uppercase tracking-[0.08em] ${isToday ? "text-ink" : "text-muted"}`}
+      >
+        {formatWeekday(day)}
+      </span>
+      {isToday ? (
+        <span
+          className="nums inline-grid size-[26px] place-items-center rounded-full text-[15px] text-white"
+          style={{ backgroundColor: accent }}
+        >
+          {formatDayNumber(day)}
+        </span>
+      ) : (
+        <span className="nums text-[18px]">{formatDayNumber(day)}</span>
+      )}
+    </>
+  );
+
+  const shell = `flex items-center gap-2 border-l border-line px-3 py-2.5 ${isToday ? "bg-today-col" : ""}`;
+
+  return href ? (
+    <Link
+      href={href}
+      aria-label={`Open ${formatWeekday(day)} ${formatDayNumber(day)} on its own`}
+      className={`${shell} transition-colors duration-[var(--vk-dur-fast)] hover:bg-hover`}
+    >
+      {inner}
+    </Link>
+  ) : (
+    <div className={shell}>{inner}</div>
   );
 }
 
