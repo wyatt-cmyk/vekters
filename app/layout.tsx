@@ -26,7 +26,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${displaySerif.variable} ${bodySans.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      {/* Browser extensions (Grammarly, password managers and the like) add
+          their own attributes to <body> before React hydrates, which React
+          then reports as a mismatch. suppressHydrationWarning covers this one
+          element's attributes only, so a real mismatch anywhere inside the app
+          is still reported. */}
+      <body suppressHydrationWarning className="min-h-full flex flex-col">
+        {children}
+      </body>
     </html>
   );
 }

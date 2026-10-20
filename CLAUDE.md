@@ -232,3 +232,10 @@ An event block paints itself through two inline variables, `--ev-bg` and `--ev-d
 **Two ways to filter, on purpose.** The header chips hide a whole category (School, Sports, Other) and live in the URL, so a filtered view can be shared. The sidebar checkboxes hide one calendar and live in settings, so they persist and apply in every view. The chips are the quick "just show me school"; the checkboxes are precise. The design only has the second; the first is this app's reason for existing.
 
 **Search** writes `?q=` after a 250ms pause and the server filters, so a search is part of the address like everything else. It matches the event title, which is what the handoff specifies. Searching a place would also be useful and is a small change if it's ever wanted.
+
+## Why `<body>` has suppressHydrationWarning
+Browser extensions edit the page before React hydrates. Grammarly adds `data-gr-ext-installed` and `data-new-gr-c-s-check-loaded` to `<body>`; password managers do similar things. React compares the server HTML with what it finds, sees attributes it didn't write, and reports a hydration mismatch that has nothing to do with the app.
+
+`suppressHydrationWarning` on `<body>` covers **that one element's attributes only**. A genuine mismatch inside any component is still reported, so this doesn't hide our own bugs. Don't remove it, and don't spread it to other elements to quieten a warning: anywhere else, a mismatch is real and worth fixing.
+
+For reference, the app's own client components are already careful about this. `NowLine` renders nothing until it has mounted, so the server and the browser never disagree about the time, and every `crypto.randomUUID()` in the chat runs in an event handler rather than during render.
