@@ -1,25 +1,26 @@
 import type { Metadata } from "next";
-import { Fraunces, Hanken_Grotesk } from "next/font/google";
+import { Geist, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 
-// A characterful serif for the wordmark, headings and day numbers, paired with
-// a warm humanist sans for everything you actually read. next/font downloads
-// both at build time and exposes them as CSS variables globals.css picks up.
-const displaySerif = Fraunces({
-  variable: "--font-fraunces",
+// The Vekters pairing: a modern sans for everything functional, and a
+// high-contrast editorial serif used only for big moments like the month
+// heading and an event title.
+const displaySerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
   subsets: ["latin"],
-  weight: ["400", "600"],
+  weight: ["400"],
+  style: ["normal", "italic"],
 });
 
-const bodySans = Hanken_Grotesk({
-  variable: "--font-hanken",
+const bodySans = Geist({
+  variable: "--font-geist",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
-  title: "Athlete Calendar",
-  description: "School and sports, one calendar.",
+  title: "Vekters",
+  description: "School and sports in one calendar.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

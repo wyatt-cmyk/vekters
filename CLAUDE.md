@@ -1,6 +1,8 @@
 @AGENTS.md
 
-# AI Calendar for Student Athletes
+# Vekters — an AI calendar for student athletes
+
+The product is called **Vekters**. The wordmark and monogram live in `public/brand/`.
 
 ## What this app is
 An AI-powered calendar for high school student athletes. It combines school assignments and sports schedules in one place, using Google Calendar as the hub. Coaches often send schedule changes by text, so users can paste those messages into a built-in AI chat that turns them into calendar events.
@@ -48,34 +50,39 @@ High school student athletes juggling classes, practices, games, and travel. Our
 - Missing end time: default to 2 hours and flag it for the user.
 - Missing details: ask a short follow-up question.
 
-## Design — "Daylight"
-Light, calm and roomy, so it stays comfortable to read all day on a Chromebook. White cards on a warm off-white ground, soft rounding, one warm accent reserved for today and the send button. No pastel fills, no left-hand colour bars, no drop shadows.
+## Design — Vekters
+The source of truth is `vekters-handoff/`, a design handoff produced in Claude Design. Read `vekters-handoff/CLAUDE_CODE_HANDOFF.md` first. `design/Main.dc.html` and `design/Mobile.dc.html` are the finished designs; they are canvas-format, not production code, so rebuild rather than copy. Where the written spec and the design files disagree, follow the design files.
 
-Colours (tokens live in `app/globals.css`, so use `bg-surface`, `text-school`, `border-line` and so on, never raw hex in components):
-- Page background: #F6F6F4
-- Surface (cards, header, panel): #FFFFFF
-- Ink (body text, primary buttons): #1C211F
-- Muted text: #646E6A. Faint (weekday labels): #8A938E
-- Borders: #E6E7E3, stronger #DDDFDA for controls
-- Accent (today and the send button only): #B8482A with white text
-- School: #2A52C9. Sports: #15715A. Both carry a text label too, never colour alone.
-- Warning: text #8A3B00, fill #FFF1DD, border #E8B878
+Tokens are in `vekters-handoff/tokens/tokens.css` and are mirrored into `app/globals.css` as Tailwind theme tokens. **Use the tokens in components, never a raw hex.**
 
-Fonts (Google Fonts, loaded in `app/layout.tsx`):
-- Display: Fraunces 400/600. Wordmark, page headings, day numbers.
-- Body and UI: Hanken Grotesk 400/500/600/700.
-- Use the `.nums` class for times and dates so columns line up.
+- Surfaces: page/sidebar `bg-bg` #F5F5F0, grid `bg-surface` white, right rail `bg-panel` #FBFBF8, today's column `bg-today-col`.
+- Text: `text-ink` #171717, `text-muted` #6B6B66, `text-faint` #6F6F69, `text-on-event` #4F4F4A, `text-body` #3F3F3B, `text-danger` #9B2C2C.
+- Lines: `border-line` #E4E4DF, `border-line-soft` for hour lines, `bg-nav-active`, `bg-hover`, `bg-cell-hover`.
+- Calendar colours are a pastel for the event block plus a darker dot for indicators: `cal-blue`, `cal-green`, `cal-peach`, `cal-pink`, `cal-lavender` and their `-dot` pairs.
+- Fonts: **Geist** 400/500/600 for everything functional, **Instrument Serif** 400 (and italic) for the month heading and event titles only.
+- Radii: `rounded-chip` 5, `rounded-event` 7, `rounded-control` 8, `rounded-card` 10, `rounded-sheet` 18.
+- Layout: `w-sidebar` 252px, `w-rail` 316px, `w-gutter` 64px, `h-hour` 64px (the grid runs 6 AM to 10 PM).
+- Motion: `--vk-dur-fast` 180ms, `--vk-dur` 260ms, `--vk-dur-panel` 280ms, all collapsing to 0 under `prefers-reduced-motion`.
 
-Icons: Lucide (`lucide-react`). Never emoji or text characters such as a tick or chevron.
+Today, the now line and primary buttons are ink by default. The Settings colour picker still overrides `--color-accent` per person, and "Ink" is the default choice.
 
-Layout notes:
-- Light header with the wordmark; controls are pills.
-- The week toolbar leads with the date range in the display serif, then round nav buttons, filter chips with a category dot, and Import.
-- Each day is a stack of white `rounded-card` cards under its own date header, sitting on the page background. There is no bordered day panel.
-- Today's date sits in a filled accent pill; weekend dates are de-emphasised.
-- Event cards show a small uppercase category label in the category colour, then the title, then the time.
-- AI chat panel on the right, about 380px, at 1280px and wider. Below that it stacks above the week.
-- Touch targets at least 44px tall.
+### Two decisions that differ from the handoff
+- **The assistant lives in the right rail.** The design has sidebar + calendar + details panel and never mentions the AI chat, which is this app's point. At 1366px the sidebar and rail already take 568px, so a third column is impossible. The rail holds the assistant now; the event details panel joins it as a second tab in phase 4.
+- **The sidebar nav lists only real destinations** (Calendar, Today, Import, Settings). The design also shows Tasks and Search; Tasks doesn't exist and Search arrives in phase 5, and dead nav items are worse than missing ones.
+
+### Build phases
+1. **Done.** Tokens, fonts, brand assets, the three-column shell, the assistant rehomed to the rail, and the event block reshaped to the design (colour dot, title, time).
+2. The week hour grid: 64px an hour, 6 AM to 10 PM, time gutter, sticky header, all-day row, overlap lanes (port `layout()` from `Main.dc.html`), now line on today, click an empty slot to create.
+3. Day and Month views, the mini calendar, date jumping, the view switcher.
+4. The details panel moves into the rail as a second tab, replacing the modal dialog.
+5. Search, per-calendar visibility toggles, and remapping calendar colours to the five pastels.
+6. Mobile day agenda and bottom sheet below 768px.
+7. Motion, reduced motion, keyboard access, focus rings.
+
+**Nothing from the design is hardcoded.** Its events, times, attendees, notes and calendar names (School, Athletics, Personal, Social, Flight Training) are all sample data. Every view reads the real calendars.
+
+### Not designed yet
+Drag to reschedule or resize, Tasks, a tablet layout with a collapsible sidebar. The details panel also designs a cover photo, reminders, recurrence and attendees, which our event data has no fields for; hide them rather than invent them.
 
 ## Project layout (kept up to date as we build)
 - `auth.ts` — Auth.js config: Google provider, calendar scopes, token refresh.
@@ -99,7 +106,10 @@ Layout notes:
 - `lib/ai/tools.ts` — tool definitions (`find_events`, `create_event`) and the shared `EVENT_FIELDS` schema.
 - `lib/ai/system-prompt.ts` — Claude's rules, plus today's date, time zone, and writable calendars.
 - `lib/proposals.ts` — the `EventProposal` type, validation, and conversion to Google's event format.
-- `components/` — header, week grid + event cards, sign-in screen, notice box.
+- `components/sidebar.tsx` — the 252px left rail: wordmark, nav, calendar legend, sign out.
+- `components/` — week grid, chat panel, event dialog, sign-in screen, notice box.
+- `components/app-header.tsx` — the old top bar, still used by Settings and Import until they move onto the sidebar shell.
+- `public/brand/` — the Vekters wordmark and monogram. PNG only; use an SVG if an original ever turns up.
 - `lib/calendar-data.ts` — decides demo vs. real Google data, for reading (`loadWeek`, `getEventsBetween`) and writing (`createEventFromProposal`).
 - `lib/google-calendar.ts` — server-only helpers that call the Google Calendar REST API, with `GoogleCalendarError` turning Google's errors into plain messages.
 - `components/setup-warnings.tsx` — banners for missing Google permissions and calendars that wouldn't load.

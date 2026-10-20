@@ -17,6 +17,7 @@ export const SETTINGS_COOKIE = "settings";
 // Accent: used for today's date and the send button. Each one is dark enough
 // that white text on it stays readable.
 export const ACCENTS = {
+  ink: { label: "Ink", hex: "#171717" },
   clay: { label: "Clay", hex: "#b8482a" },
   blue: { label: "Blue", hex: "#1f4fbf" },
   forest: { label: "Forest", hex: "#15715a" },
@@ -50,7 +51,7 @@ export type Settings = {
   colors: Record<string, ColorId>; // calendar id -> colour
 };
 
-export const DEFAULT_SETTINGS: Settings = { accent: "clay", weekStart: "mon", clock: "12", colors: {} };
+export const DEFAULT_SETTINGS: Settings = { accent: "ink", weekStart: "mon", clock: "12", colors: {} };
 
 /* ---------- checking values ---------- */
 // Everything here can arrive from a cookie or a form, so nothing is trusted.

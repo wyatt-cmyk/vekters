@@ -154,3 +154,13 @@ export function toLocalDateTime(instant: Date, timeZone: string) {
   const time = new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(instant);
   return `${toDayKey(instant, timeZone)} ${time}`;
 }
+
+// "October 2026", or "October – November 2026" when the week straddles two.
+export function formatMonthTitle(firstDay: DayKey, lastDay: DayKey) {
+  const month = (day: DayKey) =>
+    new Intl.DateTimeFormat("en-US", { month: "long", timeZone: "UTC" }).format(toUtcDate(day));
+  const year = lastDay.slice(0, 4);
+  const first = month(firstDay);
+  const last = month(lastDay);
+  return first === last ? `${first} ${year}` : `${first} – ${last} ${year}`;
+}

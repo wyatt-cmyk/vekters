@@ -20,7 +20,7 @@ type Props = {
 
 export function WeekGrid({ days, eventsByDay, today, timeZone, colorOf, clock, accent, eventHref }: Props) {
   return (
-    <div className="grid flex-1 grid-cols-1 gap-3 lg:grid-cols-7">
+    <div className="grid flex-1 grid-cols-1 gap-2 lg:grid-cols-7">
       {days.map((day) => {
         const events = eventsByDay.get(day) ?? [];
         const isToday = day === today;
@@ -30,26 +30,25 @@ export function WeekGrid({ days, eventsByDay, today, timeZone, colorOf, clock, a
           <section
             key={day}
             aria-label={`${formatWeekday(day)} ${formatDayNumber(day)}${isToday ? ", today" : ""}`}
-            className="flex flex-col gap-2"
+            className="flex flex-col gap-1.5"
           >
             <h2 className="flex items-center gap-2 px-1 pb-0.5">
               <span
-                className={`text-[11px] font-bold uppercase tracking-wider ${
-                  isToday ? "" : isWeekend ? "text-faint/80" : "text-faint"
+                className={`text-[12px] font-medium uppercase tracking-[0.08em] ${
+                  isToday ? "text-ink" : "text-muted"
                 }`}
-                style={isToday ? { color: accent } : undefined}
               >
                 {formatWeekday(day)}
               </span>
               {isToday ? (
                 <span
-                  className="nums font-display inline-grid h-7 min-w-7 place-items-center rounded-full px-2 text-base font-semibold text-white"
+                  className="nums inline-grid size-[26px] place-items-center rounded-full text-[15px] text-white"
                   style={{ backgroundColor: accent }}
                 >
                   {formatDayNumber(day)}
                 </span>
               ) : (
-                <span className={`nums font-display text-xl font-semibold ${isWeekend ? "text-muted" : ""}`}>
+                <span className={`nums text-[18px] ${isWeekend ? "text-faint" : ""}`}>
                   {formatDayNumber(day)}
                 </span>
               )}
@@ -72,7 +71,9 @@ export function WeekGrid({ days, eventsByDay, today, timeZone, colorOf, clock, a
   );
 }
 
-// The calendar's colour reads as a small label rather than a bar down the side.
+// The design's event block: a colour dot for the calendar, then the title and
+// time. The calendar's name doesn't fit a 107px column, so it moves to the
+// block's accessible name and to the legend in the sidebar.
 function EventCard({
   event,
   color,
@@ -89,23 +90,32 @@ function EventCard({
   // Google hides events it treats as deleted, so we mark cancellations by
   // renaming them. Either signal counts.
   const cancelled = event.status === "cancelled" || isCancelledTitle(event.summary);
+  const title = event.summary ?? "(no title)";
+  const when = cancelled ? "Cancelled" : formatEventTime(event, timeZone, clock);
 
   return (
-    // The whole card is the link, so it's an easy target on a touchscreen.
+    // The whole block is the link, so it's an easy target on a touchscreen.
     <Link
       href={href}
-      className={`block rounded-card border border-line bg-surface px-3 py-2.5 hover:border-line-strong hover:bg-bg ${
-        cancelled ? "opacity-60" : ""
+      aria-label={`${title}, ${when}, ${event.calendarName}`}
+      className={`block rounded-event border border-line bg-surface px-2.5 py-2 transition-colors duration-[var(--vk-dur-fast)] hover:bg-cell-hover ${
+        cancelled ? "opacity-55" : ""
       }`}
     >
-      <p className="truncate text-[10px] font-bold uppercase tracking-wider" style={{ color }}>
-        {event.calendarName}
-      </p>
-      <p className={`text-sm font-semibold leading-snug ${cancelled ? "line-through" : ""}`}>
-        {event.summary ?? "(no title)"}
-      </p>
-      <p className="nums mt-0.5 text-xs text-muted">{cancelled ? "Cancelled" : formatEventTime(event, timeZone, clock)}</p>
-      {event.location && <p className="truncate text-xs text-muted">{event.location}</p>}
+      <span className="flex items-start gap-1.5">
+        <span
+          aria-hidden="true"
+          className="mt-[5px] size-2 shrink-0 rounded-[2px]"
+          style={{ backgroundColor: color }}
+        />
+        <span className="min-w-0 flex-1">
+          <span className={`block text-[13px] font-medium leading-[1.25] ${cancelled ? "line-through" : ""}`}>
+            {title}
+          </span>
+          <span className="nums mt-0.5 block text-[11px] text-on-event">{when}</span>
+          {event.location && <span className="mt-0.5 block truncate text-[11px] text-muted">{event.location}</span>}
+        </span>
+      </span>
     </Link>
   );
 }

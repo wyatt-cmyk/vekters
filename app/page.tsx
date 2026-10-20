@@ -6,20 +6,20 @@
 //   /?week=2026-09-28&hide=sports   -> same week with Sports events hidden
 
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, FileInput, Plus } from "lucide-react";
-import { AppHeader } from "@/components/app-header";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { ChatPanel } from "@/components/chat-panel";
 import { Notice } from "@/components/notice";
 import { SetupWarnings } from "@/components/setup-warnings";
 import { Landing } from "@/components/landing";
 import { DeleteConfirm, EventDetail, EventForm } from "@/components/event-dialog";
+import { Sidebar } from "@/components/sidebar";
 import { WeekGrid } from "@/components/week-grid";
 import { findEvent, loadWeek } from "@/lib/calendar-data";
 import { canWrite } from "@/lib/google-calendar";
 import { snapshotOf } from "@/lib/proposals";
 import { accentHex, colorsForCalendars, readSettings } from "@/lib/settings";
 import { isTag, readSavedTags, TAG_LABELS, tagsForCalendars, type Tag } from "@/lib/tags";
-import { addDays, formatWeekRange, groupByDay, weekDays, type DayKey } from "@/lib/week";
+import { addDays, formatMonthTitle, formatWeekRange, groupByDay, weekDays, type DayKey } from "@/lib/week";
 
 export default async function WeekPage({ searchParams }: PageProps<"/">) {
   const params = await searchParams;
@@ -33,18 +33,11 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
   // Not signed in: show the front door rather than a bare sign-in box.
   if (data.status === "signed-out") return <Landing />;
 
-  const header = (
-    <AppHeader mode={data.mode} userName={data.userName} link={{ href: "/calendars", label: "Settings" }} />
-  );
-
   if (data.status === "error") {
     return (
-      <>
-        {header}
-        <main className="p-4">
-          <Notice>Couldn&apos;t load your calendar. {data.message}</Notice>
-        </main>
-      </>
+      <main className="p-6">
+        <Notice>Couldn&apos;t load your calendar. {data.message}</Notice>
+      </main>
     );
   }
 
@@ -72,87 +65,95 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
   const selected =
     text("cal") && text("ev") ? await findEvent(data, text("cal")!, text("ev")!) : null;
 
-  // On wide screens (1280px+, like a Chromebook): week on the left, chat on the
-  // right, each scrolling on its own. On narrower screens: chat on top.
-  return (
-    // The chosen team colour overrides the --color-accent token for this page,
-    // so every bg-accent / text-accent below picks it up with no extra wiring.
-    <div className="flex flex-1 flex-col xl:h-dvh" style={{ "--color-accent": accent } as React.CSSProperties}>
-      {header}
-      <div className="flex min-h-0 flex-1 flex-col xl:flex-row">
-        <main className="flex min-w-0 flex-1 flex-col gap-5 p-6 xl:overflow-y-auto">
-          {/* Toolbar: the date leads, controls sit to the right of it. */}
-          <div className="flex flex-wrap items-center gap-4">
-            <h1 className="font-display text-3xl font-semibold tracking-tight">{formatWeekRange(data.monday)}</h1>
+  const calendarRows = data.calendars.map((c) => ({
+    id: c.id,
+    name: c.summary,
+    color: colorOf.get(c.id) ?? "#6b6b66",
+  }));
 
-            <div className="flex gap-2">
-              <NavLink href={weekHref(addDays(data.monday, -7), hidden)} label="Previous week">
-                <ChevronLeft size={18} strokeWidth={2.2} />
-              </NavLink>
-              <NavLink href={weekHref(addDays(data.monday, 7), hidden)} label="Next week">
-                <ChevronRight size={18} strokeWidth={2.2} />
-              </NavLink>
+  // The shell the design fixes: 252px sidebar, flexible calendar, 316px rail.
+  // The assistant lives in the rail; the event details panel joins it there in
+  // a later phase, and until then details stay in the dialog below.
+  return (
+    // The chosen colour overrides the --color-accent token for this page, so
+    // every bg-accent / text-accent below picks it up with no extra wiring.
+    <div className="flex h-dvh flex-col" style={{ "--color-accent": accent } as React.CSSProperties}>
+      <div className="flex min-h-0 flex-1">
+        <div className="hidden lg:flex">
+          <Sidebar
+            mode={data.mode}
+            userName={data.userName}
+            calendars={calendarRows}
+            active="calendar"
+            todayHref={buildHref(undefined, hidden)}
+          />
+        </div>
+
+        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+          <header className="flex flex-wrap items-end gap-x-6 gap-y-4 px-6 pb-5 pt-6">
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted">Your calendar</p>
+              <h1 className="font-display mt-1 text-[clamp(2rem,3.4vw,3.375rem)] leading-none tracking-[-0.01em]">
+                {formatMonthTitle(days[0], days[6])}
+              </h1>
+              <p className="nums mt-1.5 text-[13px] text-muted">{formatWeekRange(data.monday)}</p>
             </div>
 
-            {!isThisWeek && (
-              <Link
-                href={weekHref(undefined, hidden)}
-                className="flex min-h-10 items-center rounded-full border border-line-strong bg-surface px-4 text-sm font-semibold hover:bg-bg"
-              >
-                This week
-              </Link>
-            )}
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              {!isThisWeek && (
+                <Link
+                  href={weekHref(undefined, hidden)}
+                  className="flex h-9 items-center rounded-control border border-line-strong bg-surface px-4 text-[14px] transition-colors duration-[var(--vk-dur-fast)] hover:bg-hover"
+                >
+                  Today
+                </Link>
+              )}
+              <div className="flex">
+                <NavLink href={weekHref(addDays(data.monday, -7), hidden)} label="Previous week" side="left">
+                  <ChevronLeft size={17} strokeWidth={1.8} />
+                </NavLink>
+                <NavLink href={weekHref(addDays(data.monday, 7), hidden)} label="Next week" side="right">
+                  <ChevronRight size={17} strokeWidth={1.8} />
+                </NavLink>
+              </div>
 
-            <div className="ml-auto flex flex-wrap items-center gap-2" aria-label="Show or hide calendars">
               {chipTags.map((tag) => (
                 <FilterChip key={tag} tag={tag} monday={data.monday} hidden={hidden} />
               ))}
+
               <Link
                 href={base({ new: "1" })}
-                className="flex min-h-10 items-center gap-2 rounded-full border border-line-strong bg-surface px-4 text-sm font-semibold hover:bg-bg"
+                className="flex h-9 items-center gap-2 rounded-control bg-ink px-4 text-[14px] text-white transition-colors duration-[var(--vk-dur-fast)] hover:bg-black"
               >
-                <Plus size={16} strokeWidth={2.4} />
+                <Plus size={15} strokeWidth={2} />
                 New event
               </Link>
-              <Link
-                href="/import"
-                className="flex min-h-10 items-center gap-2 rounded-full bg-ink px-5 text-sm font-semibold text-white hover:opacity-90"
-              >
-                <FileInput size={15} strokeWidth={2.2} />
-                Import
-              </Link>
             </div>
+          </header>
+
+          <div className="flex flex-col gap-4 px-6 pb-6">
+            {text("error") && <Notice>{text("error")}</Notice>}
+            <SetupWarnings missingScopes={data.missingScopes} failedCalendars={data.failedCalendars} />
+            {data.mode === "demo" && (
+              <Notice>
+                <strong>Demo mode.</strong> These are sample events. Add your Google keys to <code>.env.local</code>{" "}
+                (see SETUP.md) to see your real calendar.
+              </Notice>
+            )}
+
+            <WeekGrid
+              days={days}
+              eventsByDay={eventsByDay}
+              today={data.today}
+              timeZone={data.timeZone}
+              colorOf={colorOf}
+              clock={settings.clock}
+              accent={accent}
+              eventHref={(event) => base({ cal: event.calendarId, ev: event.id })}
+            />
+
+            <p className="text-[12px] text-muted">Times shown in {data.timeZone}.</p>
           </div>
-
-          {text("error") && <Notice>{text("error")}</Notice>}
-
-          <SetupWarnings missingScopes={data.missingScopes} failedCalendars={data.failedCalendars} />
-
-          {data.mode === "demo" && (
-            <Notice>
-              <strong>Demo mode.</strong> These are sample events. Add your Google keys to <code>.env.local</code> (see
-              SETUP.md) to see your real calendar.
-            </Notice>
-          )}
-
-          <WeekGrid
-            days={days}
-            eventsByDay={eventsByDay}
-            today={data.today}
-            timeZone={data.timeZone}
-            colorOf={colorOf}
-            clock={settings.clock}
-            accent={accent}
-            eventHref={(event) => base({ cal: event.calendarId, ev: event.id })}
-          />
-
-          <p className="shrink-0 text-sm text-muted">
-            Times in {data.timeZone}. Colours wrong?{" "}
-            <Link href="/calendars" className="font-semibold text-ink underline underline-offset-2">
-              Change them in Settings
-            </Link>
-            .
-          </p>
         </main>
 
         <ChatPanel />
@@ -230,12 +231,24 @@ function buildHref(week: DayKey | undefined, hidden: Set<Tag>, extra: Record<str
 
 const weekHref = (week: DayKey | undefined, hidden: Set<Tag>) => buildHref(week, hidden);
 
-function NavLink({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
+// The two arrows sit together as one control, sharing their middle border.
+function NavLink({
+  href,
+  label,
+  side,
+  children,
+}: {
+  href: string;
+  label: string;
+  side: "left" | "right";
+  children: React.ReactNode;
+}) {
+  const corners = side === "left" ? "rounded-l-control border-r-0" : "rounded-r-control";
   return (
     <Link
       href={href}
       aria-label={label}
-      className="flex size-10 items-center justify-center rounded-full border border-line-strong bg-surface hover:bg-bg"
+      className={`flex size-9 items-center justify-center border border-line-strong bg-surface transition-colors duration-[var(--vk-dur-fast)] hover:bg-hover ${corners}`}
     >
       {children}
     </Link>
@@ -260,11 +273,11 @@ function FilterChip({ tag, monday, hidden }: { tag: Tag; monday: DayKey; hidden:
     <Link
       href={weekHref(monday, next)}
       aria-label={`${isShown ? "Hide" : "Show"} ${TAG_LABELS[tag]} events`}
-      className={`flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold ${
-        isShown ? "border-line-strong bg-surface" : "border-line bg-bg text-muted"
+      className={`flex h-9 items-center gap-2 rounded-control border px-3.5 text-[14px] transition-colors duration-[var(--vk-dur-fast)] ${
+        isShown ? "border-line-strong bg-surface hover:bg-hover" : "border-line bg-bg text-faint"
       }`}
     >
-      <span aria-hidden="true" className={`size-2.5 rounded-full ${isShown ? DOT[tag] : "bg-line-strong"}`} />
+      <span aria-hidden="true" className={`size-2.5 rounded-[3px] ${isShown ? DOT[tag] : "bg-line-strong"}`} />
       {TAG_LABELS[tag]}
     </Link>
   );

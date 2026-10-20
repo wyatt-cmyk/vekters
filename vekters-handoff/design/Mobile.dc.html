@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Vekters Mobile Agenda</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&amp;family=Instrument+Serif:ital@0;1&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font-family:inherit}
+.vm-t{transition:background-color 180ms ease,color 180ms ease,transform 180ms ease,box-shadow 180ms ease}
+.vm-card{animation:vmFade 240ms ease both;transition:filter 180ms ease}
+.vm-card:hover{filter:saturate(1.35) brightness(.97)}
+.vm-sheet{animation:vmUp 300ms cubic-bezier(.2,.7,.2,1) both}
+.vm-scrim{animation:vmFade 220ms ease both}
+.vm-days{scrollbar-width:none}
+button:focus-visible{outline:2px solid #171717;outline-offset:2px}
+@keyframes vmFade{from{opacity:0}to{opacity:1}}
+@keyframes vmUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F5F5F0; color: #171717; font-family: 'Geist', system-ui, sans-serif; display: flex; flex-direction: column">
+
+<header style="padding: 22px 20px 0; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<img src="/_blob/717b9c34de6cf5d7c2e9a1d4c10a9190" alt="Vekters" style="width: 30px; height: auto; display: block">
+<div style="display: flex; gap: 4px">
+<button type="button" class="vm-t" aria-label="Search" style="width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: #171717; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path></svg></button>
+<button type="button" class="vm-t" onClick="{{goToday}}" style="height: 44px; padding: 0 16px; border: 1px solid #E4E4DF; border-radius: 22px; background: #FFFFFF; font-size: 13px; font-weight: 500; color: #171717; cursor: pointer">Today</button>
+</div>
+</div>
+<div>
+<div style="font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #6B6B66">Your Calendar</div>
+<h1 style="margin: 6px 0 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 44px; line-height: 1; letter-spacing: -0.01em">{{monthName}} <em style="color: #6B6B66">{{year}}</em></h1>
+</div>
+<div class="vm-days" role="group" aria-label="Choose day" style="display: flex; gap: 6px; overflow-x: auto; margin: 0 -20px; padding: 0 20px 16px; border-bottom: 1px solid #E4E4DF">
+<sc-for list="{{days}}" as="d" hint-placeholder-count="7">
+<button type="button" class="vm-t" onClick="{{d.pick}}" aria-pressed="{{d.pressed}}" aria-label="{{d.aria}}" style="flex: 0 0 46px; height: 68px; border: 0; border-radius: 23px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; {{d.style}}">
+<span style="font-size: 11px; letter-spacing: .06em; font-weight: 500; {{d.dowStyle}}">{{d.dow}}</span>
+<span style="font-size: 18px">{{d.num}}</span>
+<span style="width: 4px; height: 4px; border-radius: 50%; {{d.dot}}"></span>
+</button>
+</sc-for>
+</div>
+</header>
+
+<div style="flex: 1; min-height: 0; overflow-y: auto; padding: 18px 20px 110px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 4px">
+<span style="font-family: 'Instrument Serif', Georgia, serif; font-size: 24px">{{dayTitle}}</span>
+<span style="font-size: 12px; color: #6B6B66">{{countLabel}}</span>
+</div>
+<sc-for list="{{allDay}}" as="a" hint-placeholder-count="0">
+<button type="button" class="vm-card" onClick="{{a.pick}}" style="border: 0; border-radius: 8px; padding: 10px 14px; text-align: left; font-size: 13px; font-weight: 500; color: #171717; cursor: pointer; display: flex; justify-content: space-between; background: {{a.bg}}">{{a.title}}<span style="font-size: 11px; color: #4F4F4A; font-weight: 400">All day</span></button>
+</sc-for>
+<sc-for list="{{items}}" as="ev" hint-placeholder-count="4">
+<div style="display: flex; gap: 14px; align-items: stretch">
+<div style="flex: 0 0 52px; padding-top: 12px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 13px; font-weight: 500">{{ev.start}}</span>
+<span style="font-size: 11px; color: #6B6B66">{{ev.ampm}}</span>
+</div>
+<button type="button" class="vm-card" onClick="{{ev.pick}}" aria-label="{{ev.aria}}" style="flex: 1; min-width: 0; border: 0; border-radius: 8px; padding: 12px 14px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 4px; background: {{ev.bg}}; min-height: {{ev.h}}">
+<span style="font-size: 14px; font-weight: 500; color: #171717">{{ev.title}}</span>
+<span style="font-size: 12px; color: #4F4F4A">{{ev.time}}</span>
+<sc-if value="{{ev.hasLoc}}" hint-placeholder-val="{{ true }}"><span style="font-size: 12px; color: #4F4F4A">{{ev.loc}}</span></sc-if>
+</button>
+</div>
+</sc-for>
+<sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 48px 0; text-align: center; font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 20px; color: #6B6B66">A clear day.</div>
+</sc-if>
+</div>
+
+<button type="button" class="vm-t" aria-label="New event" style="position: absolute; right: 20px; bottom: 28px; width: 58px; height: 58px; border: 0; border-radius: 50%; background: #171717; color: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 18px rgba(23,23,23,.18)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+
+<sc-if value="{{hasSel}}" hint-placeholder-val="{{ false }}">
+<button type="button" class="vm-scrim" onClick="{{close}}" aria-label="Close details" style="position: absolute; inset: 0; border: 0; background: rgba(23,23,23,.28); cursor: pointer; padding: 0"></button>
+<section class="vm-sheet" aria-label="Event details" style="position: absolute; left: 0; right: 0; bottom: 0; background: #FBFBF8; border-radius: 18px 18px 0 0; padding: 12px 24px 32px; display: flex; flex-direction: column; gap: 18px">
+<div style="width: 40px; height: 4px; border-radius: 2px; background: #D9D9D3; align-self: center"></div>
+<div style="display: flex; align-items: center; justify-content: space-between">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 11px; letter-spacing: .14em"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{sel.dot}}"></span>{{sel.cat}}</span>
+<button type="button" class="vm-t" onClick="{{close}}" aria-label="Close" style="width: 44px; height: 44px; margin: -10px -10px -10px 0; border: 0; border-radius: 50%; background: transparent; color: #171717; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+<h2 style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 34px; line-height: 1.05">{{sel.title}}</h2>
+<div style="display: flex; flex-direction: column; gap: 12px; font-size: 14px">
+<span style="display: flex; gap: 12px; align-items: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B6B66" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>{{sel.when}}</span>
+<sc-if value="{{sel.hasLoc}}" hint-placeholder-val="{{ true }}"><span style="display: flex; gap: 12px; align-items: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B6B66" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0113 0c0 4.8-6.5 11-6.5 11z"></path><circle cx="12" cy="10" r="2.3"></circle></svg>{{sel.loc}}</span></sc-if>
+<sc-if value="{{sel.hasDesc}}" hint-placeholder-val="{{ true }}"><span style="color: #3F3F3B; line-height: 1.5">{{sel.desc}}</span></sc-if>
+</div>
+<div style="display: flex; gap: 8px">
+<button type="button" class="vm-t" style="flex: 1; height: 46px; border: 0; border-radius: 10px; background: #171717; color: #FFFFFF; font-size: 14px; font-weight: 500; cursor: pointer">Edit</button>
+<button type="button" class="vm-t" style="flex: 1; height: 46px; border: 1px solid #E4E4DF; border-radius: 10px; background: #FFFFFF; color: #9B2C2C; font-size: 14px; font-weight: 500; cursor: pointer">Delete</button>
+</div>
+</section>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const now = new Date();
+    this.state = { today: now, sel: (now.getDay() + 6) % 7, selId: null };
+  }
+  t(h) { const hh = Math.floor(h), m = Math.round((h - hh) * 60); return (((hh + 11) % 12) + 1) + ':' + String(m).padStart(2, '0'); }
+  ap(h) { return Math.floor(h) >= 12 ? 'PM' : 'AM'; }
+  range(s, e) { return this.ap(s) === this.ap(e) ? this.t(s) + ' – ' + this.t(e) + ' ' + this.ap(e) : this.t(s) + ' ' + this.ap(s) + ' – ' + this.t(e) + ' ' + this.ap(e); }
+  cal(id) {
+    const m = { school: ['#DCE7F5', '#6F8FBF', 'SCHOOL'], athletics: ['#DFEBDD', '#7A9F72', 'ATHLETICS'], personal: ['#F5E4D5', '#C08E62', 'PERSONAL'], social: ['#F0DEE4', '#B97C8F', 'SOCIAL'], flight: ['#E8E3F3', '#8C7DBE', 'FLIGHT TRAINING'] };
+    return m[id];
+  }
+  events() {
+    return [
+      { id: 'h', d: [0, 2, 4], s: 8, e: 9, cal: 'school', title: 'AP U.S. History', loc: 'Room 214', desc: 'Unit 3: Reconstruction and the Gilded Age.' },
+      { id: 'c', d: [1, 3], s: 8, e: 9.25, cal: 'school', title: 'AP Calculus BC', loc: 'Room 108', desc: 'Series convergence tests.' },
+      { id: 'ch', d: [0, 2], s: 9.5, e: 10.75, cal: 'school', title: 'Chemistry Lab', loc: 'Science Wing B', desc: 'Titration lab. Goggles required.' },
+      { id: 'en', d: [1, 3], s: 9.5, e: 10.5, cal: 'school', title: 'English Literature', loc: 'Room 302', desc: '' },
+      { id: 'pq', d: [1], s: 12.25, e: 13, cal: 'school', title: 'Physics Quiz Review', loc: 'Library, Study Room 3', desc: 'Kinematics practice problems.' },
+      { id: 'tp', d: [0, 1, 2], s: 15.5, e: 17.5, cal: 'athletics', title: 'Tennis Practice', loc: 'North Courts', desc: 'Serve and return drills, then match play.' },
+      { id: 'sg', d: [2], s: 16.5, e: 17.75, cal: 'social', title: 'Study Group', loc: 'Corner Café', desc: 'Calc BC series practice.' },
+      { id: 'or', d: [3], s: 12, e: 12.75, cal: 'personal', title: 'Orthodontist', loc: 'Downtown office', desc: '' },
+      { id: 'mw', d: [3], s: 16, e: 18.5, cal: 'athletics', title: 'Match vs. Westridge', loc: 'Westridge HS, Courts 1–4', desc: 'Varsity singles. Bus leaves at 3:15.' },
+      { id: 'co', d: [4], s: 6.5, e: 7.5, cal: 'athletics', title: 'Conditioning', loc: 'Fieldhouse', desc: '' },
+      { id: 'pr', d: [4], all: true, cal: 'school', title: 'Progress Reports Due' },
+      { id: 'mn', d: [4], s: 19.5, e: 22, cal: 'social', title: 'Movie Night', loc: 'Alex’s place', desc: '' },
+      { id: 'mb', d: [5], all: true, cal: 'personal', title: 'Mom’s Birthday' },
+      { id: 'ft', d: [5], s: 9, e: 11, cal: 'flight', title: 'Flight Training', loc: 'Hangar 4, Regional Airfield', desc: 'Pattern work and landings with instructor.' },
+      { id: 'br', d: [6], s: 10.5, e: 12, cal: 'personal', title: 'Brunch with Family', loc: 'Home', desc: '' },
+      { id: 'dw', d: [6], s: 14, e: 16.5, cal: 'personal', title: 'Deep Work Block', loc: '', desc: 'Phone off. Finish the history DBQ draft.' }
+    ];
+  }
+  renderVals() {
+    const st = this.state;
+    const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const DOW = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    const DOWL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const now = st.today; const todayIdx = (now.getDay() + 6) % 7;
+    const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - todayIdx);
+    const dateOf = (i) => new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i);
+    const all = this.events();
+    const days = [0, 1, 2, 3, 4, 5, 6].map((i) => {
+      const dt = dateOf(i); const on = i === st.sel; const isToday = i === todayIdx;
+      return {
+        dow: DOW[i], num: dt.getDate(), pressed: String(on), aria: DOWL[i] + ' ' + dt.getDate(),
+        style: on ? 'background:#171717;color:#FFFFFF;' : (isToday ? 'background:#EAEAE6;color:#171717;' : 'background:transparent;color:#171717;'),
+        dowStyle: on ? 'color:#D9D9D3;' : 'color:#6B6B66;',
+        dot: all.some((e) => e.d.indexOf(i) >= 0) ? (on ? 'background:#FFFFFF;' : 'background:#9A9A94;') : 'background:transparent;',
+        pick: () => this.setState({ sel: i, selId: null })
+      };
+    });
+    const list = all.filter((e) => e.d.indexOf(st.sel) >= 0);
+    const timed = list.filter((e) => !e.all).sort((a, b) => a.s - b.s);
+    const sd = dateOf(st.sel);
+    const items = timed.map((e) => ({
+      title: e.title, time: this.range(e.s, e.e), start: this.t(e.s), ampm: this.ap(e.s), loc: e.loc, hasLoc: !!e.loc,
+      bg: this.cal(e.cal)[0], h: Math.max(64, (e.e - e.s) * 56) + 'px', aria: e.title + ', ' + this.range(e.s, e.e),
+      pick: () => this.setState({ selId: e.id })
+    }));
+    const allDay = list.filter((e) => e.all).map((e) => ({ title: e.title, bg: this.cal(e.cal)[0], pick: () => this.setState({ selId: e.id }) }));
+    const se = all.find((e) => e.id === st.selId);
+    let sel = {};
+    if (se) {
+      const c = this.cal(se.cal);
+      sel = { title: se.title, cat: c[2], dot: c[1], when: DOWL[st.sel] + ', ' + MONTHS[sd.getMonth()].slice(0, 3) + ' ' + sd.getDate() + ' · ' + (se.all ? 'All day' : this.range(se.s, se.e)), loc: se.loc, hasLoc: !!se.loc, desc: se.desc, hasDesc: !!se.desc };
+    }
+    return {
+      monthName: MONTHS[sd.getMonth()], year: String(sd.getFullYear()),
+      days: days, items: items, allDay: allDay, empty: list.length === 0,
+      dayTitle: (st.sel === todayIdx ? 'Today, ' : DOWL[st.sel] + ', ') + MONTHS[sd.getMonth()].slice(0, 3) + ' ' + sd.getDate(),
+      countLabel: list.length + (list.length === 1 ? ' event' : ' events'),
+      goToday: () => this.setState({ sel: todayIdx, selId: null }),
+      hasSel: !!se, sel: sel, close: () => this.setState({ selId: null })
+    };
+  }
+}
+</script>
+</body>
+</html>

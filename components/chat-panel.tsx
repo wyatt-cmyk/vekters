@@ -102,8 +102,8 @@ export function ChatPanel() {
   }
 
   return (
-    <aside className="order-first flex max-h-[70vh] flex-col border-b border-line bg-surface xl:order-none xl:max-h-none xl:w-[380px] xl:shrink-0 xl:border-b-0 xl:border-l">
-      <h2 className="px-5 pb-1 pt-5 font-display text-xl font-semibold tracking-tight">Assistant</h2>
+    <aside className="order-first flex max-h-[60vh] flex-col border-b border-line bg-panel xl:order-none xl:max-h-none xl:w-rail xl:shrink-0 xl:border-b-0 xl:border-l">
+      <h2 className="px-5 pb-2 pt-6 text-[11px] font-medium uppercase tracking-[0.14em] text-muted">Assistant</h2>
 
       <div ref={listRef} className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-5 py-4" aria-live="polite">
         {items.length === 0 && (
@@ -115,7 +115,7 @@ export function ChatPanel() {
                 <li key={example}>
                   <button
                     onClick={() => setInput(example)}
-                    className="min-h-11 w-full rounded-card border border-line px-3 py-2 text-left text-sm hover:bg-bg"
+                    className="min-h-11 w-full rounded-control border border-line bg-surface px-3 py-2 text-left text-[13px] transition-colors duration-[var(--vk-dur-fast)] hover:bg-hover"
                   >
                     {example}
                   </button>
@@ -128,7 +128,7 @@ export function ChatPanel() {
         {items.map((item) => {
           if (item.kind === "user") {
             return (
-              <p key={item.id} className="ml-8 whitespace-pre-wrap rounded-2xl rounded-br-sm bg-bg px-3.5 py-2.5 text-sm">
+              <p key={item.id} className="ml-8 whitespace-pre-wrap rounded-card rounded-br-[4px] bg-nav-active px-3.5 py-2.5 text-[13px]">
                 {item.text}
               </p>
             );
@@ -138,7 +138,7 @@ export function ChatPanel() {
               <p
                 key={item.id}
                 className={`mr-6 whitespace-pre-wrap text-sm leading-relaxed ${
-                  item.isError ? "rounded-card border border-warn-line bg-warn-fill px-3 py-2 text-warn" : "text-muted"
+                  item.isError ? "rounded-card border border-warn-line bg-warn-fill px-3 py-2 text-warn" : "text-body"
                 }`}
               >
                 {item.text}
@@ -155,7 +155,7 @@ export function ChatPanel() {
         <div className="px-5 py-2">
           <button
             onClick={confirmAll}
-            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-ink px-4 font-semibold text-white hover:opacity-90"
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-control bg-ink px-4 text-[14px] text-white transition-colors duration-[var(--vk-dur-fast)] hover:bg-black"
           >
             <Check size={16} strokeWidth={2.5} />
             Confirm all {pendingCount}
@@ -186,7 +186,7 @@ export function ChatPanel() {
           }}
           rows={3}
           placeholder="Paste a message, or ask about your week…"
-          className="w-full resize-none rounded-card border border-line bg-bg px-3.5 py-2.5 text-sm focus:border-line-strong focus:outline-none"
+          className="w-full resize-none rounded-control border border-line bg-surface px-3.5 py-2.5 text-[13px] focus:border-ink focus:outline-none"
         />
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="flex items-center gap-1 text-xs text-muted">
@@ -195,7 +195,7 @@ export function ChatPanel() {
           <button
             type="submit"
             disabled={busy || !input.trim()}
-            className="flex min-h-11 items-center gap-2 rounded-full bg-accent px-6 font-semibold text-accent-ink hover:opacity-90 disabled:opacity-40"
+            className="flex h-10 items-center gap-2 rounded-control bg-accent px-5 text-[14px] text-accent-ink transition-opacity duration-[var(--vk-dur-fast)] hover:opacity-90 disabled:opacity-40"
           >
             <Send size={15} strokeWidth={2.2} />
             Send
@@ -280,7 +280,7 @@ function ProposalCard({
             <button
               onClick={() => onConfirm(p)}
               disabled={item.status === "saving"}
-              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-ink font-semibold text-white hover:opacity-90 disabled:opacity-50"
+              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-control bg-ink text-[14px] text-white transition-colors duration-[var(--vk-dur-fast)] hover:bg-black disabled:opacity-50"
             >
               {item.status === "saving" ? "Saving…" : <>
                 <Check size={16} strokeWidth={2.5} /> Confirm
@@ -289,7 +289,7 @@ function ProposalCard({
             <button
               onClick={() => onDismiss(p)}
               disabled={item.status === "saving"}
-              className="flex min-h-11 items-center gap-1.5 rounded-full border border-line-strong px-4 font-semibold hover:bg-bg"
+              className="flex min-h-11 items-center gap-1.5 rounded-control border border-line-strong px-4 text-[14px] transition-colors duration-[var(--vk-dur-fast)] hover:bg-hover"
             >
               <X size={15} strokeWidth={2.5} /> Dismiss
             </button>

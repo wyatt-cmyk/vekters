@@ -1,0 +1,75 @@
+/* Vekters design tokens */
+:root {
+  /* Surfaces */
+  --vk-bg: #F5F5F0;            /* app background, sidebar */
+  --vk-surface: #FFFFFF;       /* calendar grid */
+  --vk-surface-muted: #FAFAF7; /* out-of-month cells */
+  --vk-panel: #FBFBF8;         /* event details panel, bottom sheet */
+  --vk-today-col: #FCFCF9;     /* today's column tint in week view */
+
+  /* Text */
+  --vk-text: #171717;
+  --vk-text-2: #6B6B66;        /* secondary text, labels */
+  --vk-text-3: #6F6F69;        /* out-of-month dates, hidden calendars */
+  --vk-text-on-event: #4F4F4A; /* time/location on pastel blocks */
+  --vk-text-body: #3F3F3B;     /* descriptions */
+  --vk-danger: #9B2C2C;
+
+  /* Lines and states */
+  --vk-line: #E4E4DF;          /* grid lines, borders, dividers */
+  --vk-line-soft: #EFEFEA;     /* hour lines inside day columns */
+  --vk-nav-active: #EAEAE6;    /* active nav, segmented control track */
+  --vk-hover: #EDEDE8;         /* nav and ghost button hover */
+  --vk-cell-hover: #FAFAF6;    /* empty time slot hover */
+  --vk-primary: #171717;       /* primary buttons, today indicator, now line */
+  --vk-primary-hover: #000000;
+  --vk-on-primary: #FFFFFF;
+
+  /* Calendar colors: background (event blocks) / dot (indicators) */
+  --vk-blue: #DCE7F5;     --vk-blue-dot: #6F8FBF;
+  --vk-green: #DFEBDD;    --vk-green-dot: #7A9F72;
+  --vk-peach: #F5E4D5;    --vk-peach-dot: #C08E62;
+  --vk-pink: #F0DEE4;     --vk-pink-dot: #B97C8F;
+  --vk-lavender: #E8E3F3; --vk-lavender-dot: #8C7DBE;
+
+  /* Fonts */
+  --vk-font-sans: 'Geist', system-ui, -apple-system, sans-serif;
+  --vk-font-serif: 'Instrument Serif', Georgia, serif;
+
+  /* Type scale */
+  --vk-fs-month: 54px;        /* serif, line-height 1, letter-spacing -0.01em */
+  --vk-fs-month-mobile: 44px;
+  --vk-fs-panel-title: 36px;  /* serif, line-height 1.05 */
+  --vk-fs-date: 18px;
+  --vk-fs-nav: 14px;
+  --vk-fs-event-title: 13px;  /* weight 500 */
+  --vk-fs-body: 13px;
+  --vk-fs-day-label: 12px;    /* uppercase, letter-spacing 0.08em, weight 500 */
+  --vk-fs-small: 11px;        /* event time, hour labels */
+  --vk-fs-section: 11px;      /* uppercase, letter-spacing 0.12em to 0.14em */
+
+  /* Radii */
+  --vk-radius-event: 7px;
+  --vk-radius-chip: 5px;
+  --vk-radius-control: 8px;
+  --vk-radius-card: 10px;
+  --vk-radius-sheet: 18px;
+
+  /* Layout */
+  --vk-sidebar-w: 252px;
+  --vk-panel-w: 316px;
+  --vk-gutter-w: 64px;
+  --vk-hour-h: 64px;          /* grid runs 6 AM to 10 PM */
+  --vk-control-h: 36px;
+  --vk-touch-min: 44px;
+
+  /* Motion */
+  --vk-ease: cubic-bezier(.2, .7, .2, 1);
+  --vk-dur-fast: 180ms;       /* hovers, color changes */
+  --vk-dur: 260ms;            /* event fade-in */
+  --vk-dur-panel: 280ms;      /* panel slide, sheet rise */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --vk-dur-fast: 0ms; --vk-dur: 0ms; --vk-dur-panel: 0ms; }
+}

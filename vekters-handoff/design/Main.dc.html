@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Vekters Calendar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&amp;family=Instrument+Serif:ital@0;1&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F5F0}
+a{color:#171717}a:hover{color:#000}
+button,input{font-family:inherit}
+.vk-t{transition:background-color 180ms ease,color 180ms ease,box-shadow 180ms ease,transform 180ms ease}
+.vk-ghost:hover{background:#EAEAE6}
+.vk-nav:hover{background:#EDEDE8}
+.vk-primary:hover{background:#000000;transform:translateY(-1px)}
+.vk-ev{transition:box-shadow 180ms ease,filter 180ms ease;animation:vkFade 260ms ease both}
+.vk-ev:hover{filter:saturate(1.35) brightness(.97)}
+.vk-cell:hover{background:#FAFAF6}
+.vk-mini:hover{background:#E6E6E1}
+.vk-day:hover .vk-num{background:#F0F0EB}
+button:focus-visible,input:focus-visible{outline:2px solid #171717;outline-offset:2px}
+.vk-panel{animation:vkSlide 280ms cubic-bezier(.2,.7,.2,1) both}
+.vk-scroll{scrollbar-width:thin;scrollbar-color:#D9D9D3 transparent}
+input::placeholder{color:#6B6B66}
+@keyframes vkFade{from{opacity:0}to{opacity:1}}
+@keyframes vkSlide{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 100vh; background: #F5F5F0; color: #171717; font-family: 'Geist', system-ui, -apple-system, sans-serif; font-size: 14px">
+
+<aside class="vk-scroll" style="flex: 0 0 252px; height: 100vh; min-height: 720px; box-sizing: border-box; padding: 30px 20px 24px; border-right: 1px solid #E4E4DF; display: flex; flex-direction: column; gap: 30px; overflow-y: auto">
+<div style="padding: 0 10px">
+<img src="/_blob/b826ab554234b9ca406e429c6989aa1e" alt="Vekters" style="display: block; width: 136px; height: auto">
+</div>
+
+<nav aria-label="Main" style="display: flex; flex-direction: column; gap: 2px">
+<button type="button" class="vk-t vk-nav" onClick="{{navCal}}" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border: 0; border-radius: 8px; font-size: 14px; color: #171717; cursor: pointer; text-align: left; background: {{navBg.calendar}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
+Calendar
+</button>
+<button type="button" class="vk-t vk-nav" onClick="{{navToday}}" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border: 0; border-radius: 8px; font-size: 14px; color: #171717; cursor: pointer; text-align: left; background: {{navBg.today}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+Today
+</button>
+<button type="button" class="vk-t vk-nav" onClick="{{navTasks}}" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border: 0; border-radius: 8px; font-size: 14px; color: #171717; cursor: pointer; text-align: left; background: {{navBg.tasks}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2.5"></rect><path d="M8.5 12.2l2.4 2.4 4.6-5"></path></svg>
+Tasks
+</button>
+<button type="button" class="vk-t vk-nav" onClick="{{navSearch}}" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border: 0; border-radius: 8px; font-size: 14px; color: #171717; cursor: pointer; text-align: left; background: {{navBg.search}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path></svg>
+Search
+</button>
+<button type="button" class="vk-t vk-nav" onClick="{{navSettings}}" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border: 0; border-radius: 8px; font-size: 14px; color: #171717; cursor: pointer; text-align: left; background: {{navBg.settings}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"></path></svg>
+Settings
+</button>
+</nav>
+
+<div style="height: 1px; background: #E4E4DF; margin: 0 10px"></div>
+
+<section aria-label="Mini calendar" style="padding: 0 6px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 0 4px">
+<span style="font-size: 13px; font-weight: 500">{{miniLabel}}</span>
+<div style="display: flex; gap: 2px">
+<button type="button" class="vk-t vk-ghost" onClick="{{prev}}" aria-label="Previous" style="width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; color: #171717; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 6l-6 6 6 6"></path></svg></button>
+<button type="button" class="vk-t vk-ghost" onClick="{{next}}" aria-label="Next" style="width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; color: #171717; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 6l6 6-6 6"></path></svg></button>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: 2px; text-align: center">
+<span style="font-size: 11px; color: #6B6B66; padding-bottom: 6px">M</span>
+<span style="font-size: 11px; color: #6B6B66; padding-bottom: 6px">T</span>
+<span style="font-size: 11px; color: #6B6B66; padding-bottom: 6px">W</span>
+<span style="font-size: 11px; color: #6B6B66; padding-bottom: 6px">T</span>
+<span style="font-size: 11px; color: #6B6B66; padding-bottom: 6px">F</span>
+<span style="font-size: 11px; color: #6B6B66; padding-bottom: 6px">S</span>
+<span style="font-size: 11px; color: #6B6B66; padding-bottom: 6px">S</span>
+<sc-for list="{{miniCells}}" as="m" hint-placeholder-count="42">
+<button type="button" class="vk-t vk-mini" onClick="{{m.pick}}" aria-label="{{m.aria}}" style="height: 28px; border: 0; border-radius: 50%; width: 28px; justify-self: center; font-size: 12px; cursor: pointer; padding: 0; {{m.style}}">{{m.num}}</button>
+</sc-for>
+</div>
+</section>
+
+<section aria-label="My calendars" style="padding: 0 6px; display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #6B6B66; padding: 0 4px 6px">My Calendars</div>
+<sc-for list="{{calList}}" as="c" hint-placeholder-count="5">
+<button type="button" class="vk-t vk-nav" onClick="{{c.toggle}}" aria-pressed="{{c.pressed}}" style="display: flex; align-items: center; gap: 12px; height: 34px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; font-size: 13px; text-align: left; color: {{c.color}}">
+<span style="width: 16px; height: 16px; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex: 0 0 16px; {{c.box}}">
+<sc-if value="{{c.on}}" hint-placeholder-val="{{ true }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"></path></svg></sc-if>
+</span>
+<span>{{c.name}}</span>
+</button>
+</sc-for>
+</section>
+
+<div style="margin-top: auto; padding: 0 10px; font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 16px; color: #6B6B66">Time, beautifully organized.</div>
+</aside>
+
+<main style="flex: 999 1 560px; min-width: 0; height: 100vh; min-height: 720px; box-sizing: border-box; padding: 30px 32px 24px; display: flex; flex-direction: column; gap: 22px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 16px">
+<div>
+<div style="font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #6B6B66">Your Calendar</div>
+<h1 style="margin: 8px 0 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 54px; line-height: 1; letter-spacing: -0.01em">{{monthName}} <em style="color: #6B6B66">{{yearLabel}}</em></h1>
+</div>
+<label style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; width: 260px; max-width: 100%; box-sizing: border-box; background: #FFFFFF; border: 1px solid #E4E4DF; border-radius: 8px; color: #6B6B66">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path></svg>
+<input type="search" value="{{query}}" onChange="{{onSearch}}" placeholder="Search events" aria-label="Search events" style="flex: 1; min-width: 0; border: 0; outline-offset: 4px; background: transparent; font-size: 13px; color: #171717">
+</label>
+</div>
+
+<div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px">
+<div style="display: flex; align-items: center; gap: 8px">
+<button type="button" class="vk-t vk-ghost" onClick="{{goToday}}" style="height: 36px; padding: 0 16px; border: 1px solid #E4E4DF; border-radius: 8px; background: #FFFFFF; font-size: 13px; font-weight: 500; color: #171717; cursor: pointer">Today</button>
+<button type="button" class="vk-t vk-ghost" onClick="{{prev}}" aria-label="Previous" style="width: 36px; height: 36px; border: 0; border-radius: 8px; background: transparent; color: #171717; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 6l-6 6 6 6"></path></svg></button>
+<button type="button" class="vk-t vk-ghost" onClick="{{next}}" aria-label="Next" style="width: 36px; height: 36px; border: 0; border-radius: 8px; background: transparent; color: #171717; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 6l6 6-6 6"></path></svg></button>
+<span style="font-size: 14px; color: #171717; margin-left: 6px">{{rangeLabel}}</span>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+<div role="group" aria-label="View" style="display: flex; padding: 3px; background: #EAEAE6; border-radius: 9px">
+<button type="button" class="vk-t" onClick="{{viewDay}}" aria-pressed="{{seg.dayOn}}" style="height: 30px; padding: 0 14px; border: 0; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; {{seg.day}}">Day</button>
+<button type="button" class="vk-t" onClick="{{viewWeek}}" aria-pressed="{{seg.weekOn}}" style="height: 30px; padding: 0 14px; border: 0; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; {{seg.week}}">Week</button>
+<button type="button" class="vk-t" onClick="{{viewMonth}}" aria-pressed="{{seg.monthOn}}" style="height: 30px; padding: 0 14px; border: 0; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; {{seg.month}}">Month</button>
+</div>
+<button type="button" class="vk-t vk-primary" onClick="{{newEvent}}" style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 18px; border: 0; border-radius: 8px; background: #171717; color: #FFFFFF; font-size: 13px; font-weight: 500; cursor: pointer">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+New Event
+</button>
+</div>
+</div>
+
+<div style="flex: 1; min-height: 0; background: #FFFFFF; border: 1px solid #E4E4DF; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column">
+
+<sc-if value="{{isGrid}}" hint-placeholder-val="{{ true }}">
+<div class="vk-scroll" ref="{{gridRef}}" style="flex: 1; min-height: 0; overflow: auto; position: relative">
+<div style="position: sticky; top: 0; z-index: 3; background: #FFFFFF; {{gridMin}}">
+<div style="display: grid; {{gridCols}} border-bottom: 1px solid #E4E4DF">
+<div style="display: flex; align-items: flex-end; justify-content: flex-end; padding: 0 10px 12px 0; font-size: 11px; color: #6B6B66">{{tzLabel}}</div>
+<sc-for list="{{days}}" as="day" hint-placeholder-count="7">
+<button type="button" class="vk-day" onClick="{{day.open}}" aria-label="{{day.aria}}" style="border: 0; border-left: 1px solid #E4E4DF; background: transparent; padding: 12px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; color: #171717">
+<span style="font-size: 12px; letter-spacing: .08em; color: #6B6B66; font-weight: 500">{{day.dow}}</span>
+<span class="vk-num vk-t" style="width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; {{day.numStyle}}">{{day.num}}</span>
+</button>
+</sc-for>
+</div>
+<div style="display: grid; {{gridCols}} border-bottom: 1px solid #E4E4DF">
+<div style="display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; font-size: 11px; letter-spacing: .08em; color: #6B6B66; min-height: 34px">ALL DAY</div>
+<sc-for list="{{days}}" as="day" hint-placeholder-count="7">
+<div style="border-left: 1px solid #E4E4DF; padding: 4px; display: flex; flex-direction: column; gap: 3px; min-height: 26px">
+<sc-for list="{{day.allDay}}" as="a" hint-placeholder-count="0">
+<button type="button" class="vk-ev" onClick="{{a.pick}}" aria-label="{{a.aria}}" style="border: 0; border-radius: 6px; padding: 5px 8px; text-align: left; font-size: 12px; font-weight: 500; color: #171717; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: {{a.bg}}; {{a.ring}}">{{a.title}}</button>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="display: grid; {{gridCols}} {{gridMin}}">
+<div style="position: relative; height: 1024px">
+<sc-for list="{{hours}}" as="h" hint-placeholder-count="15">
+<span style="position: absolute; right: 10px; font-size: 11px; color: #6B6B66; top: {{h.top}}">{{h.label}}</span>
+</sc-for>
+</div>
+<sc-for list="{{days}}" as="day" hint-placeholder-count="7">
+<div style="position: relative; height: 1024px; border-left: 1px solid #E4E4DF; background: {{day.colBg}}">
+<sc-for list="{{day.cells}}" as="cell" hint-placeholder-count="16">
+<button type="button" class="vk-cell" onClick="{{cell.make}}" aria-label="{{cell.aria}}" style="display: block; width: 100%; height: 64px; border: 0; border-bottom: 1px solid #EFEFEA; background: transparent; cursor: copy; padding: 0"></button>
+</sc-for>
+<sc-for list="{{day.events}}" as="ev" hint-placeholder-count="2">
+<button type="button" class="vk-ev" onClick="{{ev.pick}}" aria-label="{{ev.aria}}" style="position: absolute; box-sizing: border-box; border: 0; border-radius: 7px; padding: 7px 9px; text-align: left; cursor: pointer; overflow: hidden; display: flex; flex-direction: column; gap: 2px; z-index: 1; {{ev.style}}">
+<span style="font-size: 13px; font-weight: 500; color: #171717; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%">{{ev.title}}</span>
+<sc-if value="{{ev.full}}" hint-placeholder-val="{{ true }}"><span style="font-size: 11px; color: #4F4F4A; white-space: nowrap">{{ev.time}}</span></sc-if>
+<sc-if value="{{ev.showLoc}}" hint-placeholder-val="{{ false }}"><span style="font-size: 11px; color: #4F4F4A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%">{{ev.loc}}</span></sc-if>
+</button>
+</sc-for>
+<sc-if value="{{day.showNow}}" hint-placeholder-val="{{ false }}">
+<div aria-hidden="true" style="position: absolute; left: 0; right: 0; height: 1px; background: #171717; z-index: 2; pointer-events: none; top: {{day.nowTop}}">
+<span style="position: absolute; left: -4px; top: -4px; width: 9px; height: 9px; border-radius: 50%; background: #171717"></span>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isMonth}}" hint-placeholder-val="{{ false }}">
+<div class="vk-scroll" style="flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column">
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-bottom: 1px solid #E4E4DF; min-width: 700px">
+<span style="padding: 12px; font-size: 12px; letter-spacing: .08em; color: #6B6B66; font-weight: 500">MON</span>
+<span style="padding: 12px; font-size: 12px; letter-spacing: .08em; color: #6B6B66; font-weight: 500; border-left: 1px solid #E4E4DF">TUE</span>
+<span style="padding: 12px; font-size: 12px; letter-spacing: .08em; color: #6B6B66; font-weight: 500; border-left: 1px solid #E4E4DF">WED</span>
+<span style="padding: 12px; font-size: 12px; letter-spacing: .08em; color: #6B6B66; font-weight: 500; border-left: 1px solid #E4E4DF">THU</span>
+<span style="padding: 12px; font-size: 12px; letter-spacing: .08em; color: #6B6B66; font-weight: 500; border-left: 1px solid #E4E4DF">FRI</span>
+<span style="padding: 12px; font-size: 12px; letter-spacing: .08em; color: #6B6B66; font-weight: 500; border-left: 1px solid #E4E4DF">SAT</span>
+<span style="padding: 12px; font-size: 12px; letter-spacing: .08em; color: #6B6B66; font-weight: 500; border-left: 1px solid #E4E4DF">SUN</span>
+</div>
+<div style="flex: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-auto-rows: minmax(112px, 1fr); min-width: 700px">
+<sc-for list="{{monthCells}}" as="mc" hint-placeholder-count="42">
+<div style="padding: 8px; display: flex; flex-direction: column; gap: 4px; min-width: 0; {{mc.edge}} background: {{mc.bg}}">
+<button type="button" class="vk-t vk-ghost" onClick="{{mc.open}}" aria-label="{{mc.aria}}" style="align-self: flex-start; width: 28px; height: 28px; border: 0; border-radius: 50%; font-size: 13px; cursor: pointer; padding: 0; {{mc.numStyle}}">{{mc.num}}</button>
+<sc-for list="{{mc.chips}}" as="chip" hint-placeholder-count="1">
+<button type="button" class="vk-ev" onClick="{{chip.pick}}" aria-label="{{chip.aria}}" style="border: 0; border-radius: 5px; padding: 3px 7px; text-align: left; font-size: 11px; color: #171717; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: {{chip.bg}}; {{chip.ring}}"><span style="color: #4F4F4A">{{chip.time}}</span> <span style="font-weight: 500">{{chip.title}}</span></button>
+</sc-for>
+<sc-if value="{{mc.more}}" hint-placeholder-val="{{ false }}"><span style="font-size: 11px; color: #6B6B66; padding-left: 4px">{{mc.moreLabel}}</span></sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+</div>
+</main>
+
+<sc-if value="{{hasSel}}" hint-placeholder-val="{{ false }}">
+<aside class="vk-panel vk-scroll" aria-label="Event details" style="flex: 0 0 316px; height: 100vh; min-height: 720px; box-sizing: border-box; border-left: 1px solid #E4E4DF; background: #FBFBF8; overflow-y: auto; display: flex; flex-direction: column">
+<div style="position: relative; height: 168px; flex: 0 0 168px; display: flex; align-items: flex-end; padding: 22px 24px; box-sizing: border-box; overflow: hidden; background: {{sel.bg}}">
+<img src="/_blob/717b9c34de6cf5d7c2e9a1d4c10a9190" alt="" style="position: absolute; right: -18px; bottom: -26px; width: 170px; height: auto; opacity: .09">
+<div style="position: absolute; left: 24px; right: 24px; top: 58px; height: 1px; background: rgba(23,23,23,.12)"></div>
+<button type="button" class="vk-t" onClick="{{closeSel}}" aria-label="Close details" style="position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(255,255,255,.7); color: #171717; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+<div style="display: flex; align-items: center; gap: 8px; font-size: 11px; letter-spacing: .14em; color: #171717; position: absolute; top: 24px; left: 24px">
+<span style="width: 8px; height: 8px; border-radius: 50%; background: {{sel.dot}}"></span>{{sel.cat}}
+</div>
+<span style="font-size: 12px; color: #3F3F3B; position: relative">{{sel.dayShort}}</span>
+</div>
+
+<div style="padding: 24px; display: flex; flex-direction: column; gap: 22px">
+<sc-if value="{{notEditing}}" hint-placeholder-val="{{ true }}">
+<h2 style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 36px; line-height: 1.05; letter-spacing: -0.01em">{{sel.title}}</h2>
+</sc-if>
+<sc-if value="{{editing}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #6B6B66">Title
+<input type="text" value="{{draftTitle}}" onChange="{{onDraft}}" style="height: 44px; padding: 0 12px; border: 1px solid #E4E4DF; border-radius: 8px; background: #FFFFFF; font-size: 16px; color: #171717; text-transform: none; letter-spacing: 0">
+</label>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #6B6B66">Calendar</span>
+<div style="display: flex; gap: 10px">
+<sc-for list="{{swatches}}" as="sw" hint-placeholder-count="5">
+<button type="button" class="vk-t" onClick="{{sw.pick}}" aria-label="{{sw.name}}" aria-pressed="{{sw.pressed}}" style="width: 30px; height: 30px; border: 0; border-radius: 50%; cursor: pointer; background: {{sw.bg}}; {{sw.ring}}"></button>
+</sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+
+<div style="display: flex; flex-direction: column; gap: 16px; font-size: 13px; line-height: 1.5">
+<div style="display: flex; gap: 12px; align-items: flex-start">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B6B66" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 18px; margin-top: 1px"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+<span>{{sel.when}}</span>
+</div>
+<sc-if value="{{sel.hasLoc}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; gap: 12px; align-items: flex-start">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B6B66" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 18px; margin-top: 1px"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0113 0c0 4.8-6.5 11-6.5 11z"></path><circle cx="12" cy="10" r="2.3"></circle></svg>
+<span>{{sel.loc}}</span>
+</div>
+</sc-if>
+<sc-if value="{{sel.hasDesc}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; gap: 12px; align-items: flex-start">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B6B66" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" style="flex: 0 0 18px; margin-top: 1px"><path d="M5 7h14M5 12h14M5 17h9"></path></svg>
+<span style="color: #3F3F3B">{{sel.desc}}</span>
+</div>
+</sc-if>
+</div>
+
+<div style="height: 1px; background: #E4E4DF"></div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #6B6B66">Reminder</span>
+<span style="display: flex; align-items: center; gap: 8px; font-size: 13px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0112 0v5l1.5 2h-15L6 16z"></path><path d="M10 20.5a2 2 0 004 0"></path></svg>{{sel.rem}}</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #6B6B66">Repeats</span>
+<span style="display: flex; align-items: center; gap: 8px; font-size: 13px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11V9.5A3.5 3.5 0 017.5 6H19l-3-3M20 13v1.5a3.5 3.5 0 01-3.5 3.5H5l3 3"></path></svg>{{sel.rpt}}</span>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #6B6B66">Attendees</span>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{sel.who}}" as="p" hint-placeholder-count="2">
+<span style="height: 30px; min-width: 30px; padding: 0 10px; box-sizing: border-box; border-radius: 15px; background: #EAEAE6; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500">{{p.name}}</span>
+</sc-for>
+</div>
+</div>
+
+<sc-if value="{{sel.hasNotes}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #6B6B66">Notes</span>
+<p style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-size: 19px; line-height: 1.35; color: #171717">{{sel.notes}}</p>
+</div>
+</sc-if>
+
+<sc-if value="{{notEditing}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; gap: 8px; padding-top: 4px">
+<button type="button" class="vk-t vk-primary" onClick="{{startEdit}}" style="flex: 1; height: 42px; border: 0; border-radius: 8px; background: #171717; color: #FFFFFF; font-size: 13px; font-weight: 500; cursor: pointer">Edit</button>
+<button type="button" class="vk-t vk-ghost" onClick="{{remove}}" style="flex: 1; height: 42px; border: 1px solid #E4E4DF; border-radius: 8px; background: #FFFFFF; color: #9B2C2C; font-size: 13px; font-weight: 500; cursor: pointer">Delete</button>
+</div>
+</sc-if>
+<sc-if value="{{editing}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 8px; padding-top: 4px">
+<button type="button" class="vk-t vk-primary" onClick="{{save}}" style="flex: 1; height: 42px; border: 0; border-radius: 8px; background: #171717; color: #FFFFFF; font-size: 13px; font-weight: 500; cursor: pointer">Save</button>
+<button type="button" class="vk-t vk-ghost" onClick="{{cancelEdit}}" style="flex: 1; height: 42px; border: 1px solid #E4E4DF; border-radius: 8px; background: #FFFFFF; color: #171717; font-size: 13px; font-weight: 500; cursor: pointer">Cancel</button>
+</div>
+</sc-if>
+</div>
+</aside>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const now = new Date();
+    const mon = this.mondayOf(now);
+    const d = (n) => this.iso(this.add(mon, n));
+    this.state = {
+      today: this.iso(now), anchor: this.iso(mon), selDay: this.iso(now),
+      monthRef: this.iso(this.firstOf(now)),
+      view: 'week', nav: 'calendar', selId: null, editing: false, draftTitle: '', draftCal: 'personal',
+      hidden: {}, query: '', deleted: {}, over: {}, nextId: 1,
+      nowH: now.getHours() + now.getMinutes() / 60,
+      extra: [
+        { id: 'x1', date: d(1), s: 12.25, e: 13, cal: 'school', title: 'Physics Quiz Review', loc: 'Library, Study Room 3', desc: 'Kinematics practice problems before Thursday’s quiz.', who: ['AL', 'DP', 'You'] },
+        { id: 'x2', date: d(2), s: 16.5, e: 17.75, cal: 'social', title: 'Study Group', loc: 'Corner Café', desc: 'Calc BC series practice with the group.', who: ['SN', 'EH', 'You'], rem: '30 minutes before' },
+        { id: 'x3', date: d(3), s: 12, e: 12.75, cal: 'personal', title: 'Orthodontist', loc: 'Downtown office', rem: '1 hour before' },
+        { id: 'x4', date: d(3), s: 16, e: 18.5, cal: 'athletics', title: 'Match vs. Westridge', loc: 'Westridge HS, Courts 1–4', desc: 'Varsity singles. Bus leaves at 3:15.', who: ['Coach', 'Team', 'You'], rem: '1 hour before', notes: 'Pack extra grips and both rackets.' },
+        { id: 'x5', date: d(4), s: 19.5, e: 22, cal: 'social', title: 'Movie Night', loc: 'Alex’s place', who: ['AR', 'MJ', 'You'] },
+        { id: 'x9', date: d(4), allDay: true, cal: 'school', title: 'Progress Reports Due' },
+        { id: 'x6', date: d(5), allDay: true, cal: 'personal', title: 'Mom’s Birthday', notes: 'Pick up flowers Friday after school.' },
+        { id: 'x7', date: d(6), s: 10.5, e: 12, cal: 'personal', title: 'Brunch with Family', loc: 'Home' },
+        { id: 'x8', date: d(6), s: 14, e: 16.5, cal: 'personal', title: 'Deep Work Block', desc: 'Phone off. Finish the history DBQ draft.' }
+      ]
+    };
+    this._scrolled = false;
+  }
+
+  componentDidMount() {
+    this._t = setInterval(() => {
+      const n = new Date();
+      this.setState({ nowH: n.getHours() + n.getMinutes() / 60, today: this.iso(n) });
+    }, 60000);
+  }
+  componentWillUnmount() { clearInterval(this._t); }
+
+  iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  parse(s) { const p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+  add(d, n) { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() + n); return x; }
+  mondayOf(d) { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return this.add(x, -((x.getDay() + 6) % 7)); }
+  firstOf(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+  t(h) { const hh = Math.floor(h), m = Math.round((h - hh) * 60); return (((hh + 11) % 12) + 1) + ':' + String(m).padStart(2, '0'); }
+  ap(h) { return Math.floor(h) >= 12 ? 'PM' : 'AM'; }
+  range(s, e) { return this.ap(s) === this.ap(e) ? this.t(s) + ' – ' + this.t(e) + ' ' + this.ap(e) : this.t(s) + ' ' + this.ap(s) + ' – ' + this.t(e) + ' ' + this.ap(e); }
+  hourLabel(h) { return (((h + 11) % 12) + 1) + ' ' + (h >= 12 ? 'PM' : 'AM'); }
+
+  cals() {
+    return [
+      { id: 'school', name: 'School', bg: '#DCE7F5', dot: '#6F8FBF' },
+      { id: 'athletics', name: 'Athletics', bg: '#DFEBDD', dot: '#7A9F72' },
+      { id: 'personal', name: 'Personal', bg: '#F5E4D5', dot: '#C08E62' },
+      { id: 'social', name: 'Social', bg: '#F0DEE4', dot: '#B97C8F' },
+      { id: 'flight', name: 'Flight Training', bg: '#E8E3F3', dot: '#8C7DBE' }
+    ];
+  }
+  cal(id) { return this.cals().find((c) => c.id === id) || this.cals()[2]; }
+
+  rec() {
+    return [
+      { id: 'hist', dows: [0, 2, 4], s: 8, e: 9, cal: 'school', title: 'AP U.S. History', loc: 'Room 214', desc: 'Unit 3: Reconstruction and the Gilded Age.', rpt: 'Mon, Wed, Fri', who: ['Ms. Reyes', 'You'], notes: 'DBQ outline due Friday.' },
+      { id: 'calc', dows: [1, 3], s: 8, e: 9.25, cal: 'school', title: 'AP Calculus BC', loc: 'Room 108', desc: 'Series convergence tests.', rpt: 'Tue, Thu', who: ['Mr. Kim', 'You'] },
+      { id: 'chem', dows: [0, 2], s: 9.5, e: 10.75, cal: 'school', title: 'Chemistry Lab', loc: 'Science Wing B', desc: 'Titration lab. Goggles required.', rpt: 'Mon, Wed', who: ['Dr. Patel', 'Lab group'] },
+      { id: 'eng', dows: [1, 3], s: 9.5, e: 10.5, cal: 'school', title: 'English Literature', loc: 'Room 302', desc: 'Discussion: The Great Gatsby, chapters 4–6.', rpt: 'Tue, Thu' },
+      { id: 'tennis', dows: [0, 1, 2], s: 15.5, e: 17.5, cal: 'athletics', title: 'Tennis Practice', loc: 'North Courts', desc: 'Serve and return drills, then match play.', rpt: 'Mon, Tue, Wed', who: ['Coach Ellis', 'Team'], rem: '30 minutes before' },
+      { id: 'cond', dows: [4], s: 6.5, e: 7.5, cal: 'athletics', title: 'Conditioning', loc: 'Fieldhouse', rpt: 'Every Friday', who: ['Team'] },
+      { id: 'flight', dows: [5], s: 9, e: 11, cal: 'flight', title: 'Flight Training', loc: 'Hangar 4, Regional Airfield', desc: 'Pattern work and landings with instructor.', rpt: 'Every Saturday', who: ['Instructor', 'You'], rem: '1 hour before', notes: 'Check weather and NOTAMs before leaving.' }
+    ];
+  }
+
+  eventsFor(dIso, raw) {
+    const st = this.state;
+    const dow = (this.parse(dIso).getDay() + 6) % 7;
+    const base = { loc: '', desc: '', rem: '15 minutes before', rpt: 'Does not repeat', who: ['You'], notes: '' };
+    const out = [];
+    this.rec().forEach((r) => {
+      if (r.dows.indexOf(dow) >= 0) {
+        const id = r.id + '@' + dIso;
+        if (!st.deleted[id]) out.push(Object.assign({}, base, r, { id: id, date: dIso }, st.over[id] || {}));
+      }
+    });
+    st.extra.forEach((x) => { if (x.date === dIso) out.push(Object.assign({}, base, x, st.over[x.id] || {})); });
+    if (raw) return out;
+    const q = st.query.trim().toLowerCase();
+    return out.filter((e) => !st.hidden[e.cal] && (!q || e.title.toLowerCase().indexOf(q) >= 0));
+  }
+
+  layout(list) {
+    list.sort((a, b) => a.s - b.s || b.e - a.e);
+    const clusters = []; let cur = []; let end = -1;
+    list.forEach((ev) => {
+      if (cur.length && ev.s >= end) { clusters.push(cur); cur = []; end = -1; }
+      cur.push(ev); end = Math.max(end, ev.e);
+    });
+    if (cur.length) clusters.push(cur);
+    clusters.forEach((c) => {
+      const lanes = [];
+      c.forEach((ev) => {
+        let i = lanes.findIndex((le) => le <= ev.s);
+        if (i < 0) { i = lanes.length; lanes.push(ev.e); } else lanes[i] = ev.e;
+        ev.lane = i;
+      });
+      c.forEach((ev) => { ev.n = lanes.length; });
+    });
+  }
+
+  getSel() {
+    const id = this.state.selId;
+    if (!id) return null;
+    let date = null;
+    if (id.indexOf('@') >= 0) date = id.split('@')[1];
+    else { const x = this.state.extra.find((e) => e.id === id); date = x && x.date; }
+    if (!date) return null;
+    return this.eventsFor(date, true).find((e) => e.id === id) || null;
+  }
+
+  select(id) { this.setState({ selId: id, editing: false }); }
+  create(dIso, h) {
+    const st = this.state;
+    const id = 'n' + st.nextId;
+    const vis = this.cals().find((c) => !st.hidden[c.id]);
+    const cal = vis ? vis.id : 'personal';
+    this.setState({
+      extra: st.extra.concat([{ id: id, date: dIso, s: h, e: Math.min(h + 1, 22), cal: cal, title: 'New event' }]),
+      nextId: st.nextId + 1, selId: id, editing: true, draftTitle: 'New event', draftCal: cal, selDay: dIso
+    });
+  }
+  newEvent() {
+    const st = this.state;
+    let h = 9;
+    if (st.selDay === st.today) h = Math.min(21, Math.max(6, Math.ceil(st.nowH)));
+    this.create(st.selDay, h);
+  }
+  remove() {
+    const st = this.state; const id = st.selId;
+    if (!id) return;
+    if (id.indexOf('@') >= 0) { const del = Object.assign({}, st.deleted); del[id] = true; this.setState({ deleted: del, selId: null, editing: false }); }
+    else this.setState({ extra: st.extra.filter((e) => e.id !== id), selId: null, editing: false });
+  }
+  startEdit() { const ev = this.getSel(); if (ev) this.setState({ editing: true, draftTitle: ev.title, draftCal: ev.cal }); }
+  save() {
+    const st = this.state;
+    const o = Object.assign({}, st.over);
+    o[st.selId] = { title: (st.draftTitle || '').trim() || 'Untitled', cal: st.draftCal };
+    this.setState({ over: o, editing: false });
+  }
+  go(dIso) {
+    const d = this.parse(dIso);
+    this.setState({ selDay: dIso, anchor: this.iso(this.mondayOf(d)), monthRef: this.iso(this.firstOf(d)) });
+  }
+  step(dir) {
+    const st = this.state;
+    if (st.view === 'week') {
+      const a = this.add(this.parse(st.anchor), 7 * dir);
+      const s = this.add(this.parse(st.selDay), 7 * dir);
+      this.setState({ anchor: this.iso(a), selDay: this.iso(s), monthRef: this.iso(this.firstOf(this.add(a, 3))) });
+    } else if (st.view === 'day') {
+      this.go(this.iso(this.add(this.parse(st.selDay), dir)));
+    } else {
+      const m = this.parse(st.monthRef);
+      this.setState({ monthRef: this.iso(new Date(m.getFullYear(), m.getMonth() + dir, 1)) });
+    }
+  }
+  setView(v) {
+    const st = this.state;
+    const p = { view: v };
+    const sd = this.parse(st.selDay);
+    if (v === 'month') p.monthRef = this.iso(this.firstOf(sd));
+    if (v === 'week') p.anchor = this.iso(this.mondayOf(sd));
+    this.setState(p);
+  }
+  openDay(dIso) { this.go(dIso); this.setState({ view: 'day' }); }
+
+  renderVals() {
+    const st = this.state;
+    const H = 64, START = 6, END = 22;
+    const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const DOW = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    const DOWL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const RING = 'box-shadow:inset 0 0 0 1.5px #171717;';
+    const anchor = this.parse(st.anchor);
+    const selDate = this.parse(st.selDay);
+    const headerMonth = st.view === 'month' ? this.parse(st.monthRef) : (st.view === 'day' ? selDate : this.add(anchor, 3));
+    const dowOf = (dt) => (dt.getDay() + 6) % 7;
+
+    const dayDates = st.view === 'day' ? [selDate] : [0, 1, 2, 3, 4, 5, 6].map((i) => this.add(anchor, i));
+    const days = st.view === 'month' ? [] : dayDates.map((dt) => {
+      const di = this.iso(dt); const dow = dowOf(dt);
+      const isToday = di === st.today;
+      const list = this.eventsFor(di);
+      const timed = list.filter((e) => !e.allDay);
+      const all = list.filter((e) => e.allDay);
+      this.layout(timed);
+      const events = timed.map((ev) => {
+        const c = this.cal(ev.cal); const dur = ev.e - ev.s; const on = st.selId === ev.id;
+        return {
+          title: ev.title, time: this.range(ev.s, ev.e), full: dur >= 0.75, showLoc: dur >= 1.5 && !!ev.loc, loc: ev.loc,
+          aria: ev.title + ', ' + DOWL[dow] + ' ' + this.range(ev.s, ev.e),
+          style: 'top:' + ((ev.s - START) * H + 2) + 'px;height:' + Math.max(dur * H - 4, 22) + 'px;left:calc(' + (ev.lane / ev.n * 100) + '% + 4px);width:calc(' + (100 / ev.n) + '% - 8px);background:' + c.bg + ';' + (on ? RING : '') + (dur < 0.75 ? 'padding:3px 8px;justify-content:center;' : ''),
+          pick: () => this.select(ev.id)
+        };
+      });
+      const allDay = all.map((ev) => ({ title: ev.title, bg: this.cal(ev.cal).bg, ring: st.selId === ev.id ? RING : '', pick: () => this.select(ev.id), aria: ev.title + ', all day ' + DOWL[dow] }));
+      const cells = [];
+      for (let h = START; h < END; h++) cells.push({ make: () => this.create(di, h), aria: 'Create event ' + DOWL[dow] + ' at ' + this.hourLabel(h) });
+      return {
+        dow: DOW[dow], num: dt.getDate(),
+        aria: 'Open ' + DOWL[dow] + ', ' + MONTHS[dt.getMonth()] + ' ' + dt.getDate() + (isToday ? ' (today)' : ''),
+        numStyle: isToday ? 'background:#171717;color:#FFFFFF;font-weight:500;' : 'color:#171717;',
+        colBg: isToday && st.view === 'week' ? '#FCFCF9' : '#FFFFFF',
+        events: events, allDay: allDay, cells: cells,
+        showNow: isToday && st.nowH >= START && st.nowH <= END,
+        nowTop: ((st.nowH - START) * H) + 'px',
+        open: () => this.openDay(di)
+      };
+    });
+
+    const hours = [];
+    for (let h = START + 1; h < END; h++) hours.push({ label: this.hourLabel(h), top: ((h - START) * H - 7) + 'px' });
+
+    let rangeLabel = '';
+    if (st.view === 'week') {
+      const b = this.add(anchor, 6);
+      rangeLabel = anchor.getMonth() === b.getMonth()
+        ? SHORT[anchor.getMonth()] + ' ' + anchor.getDate() + ' – ' + b.getDate() + ', ' + b.getFullYear()
+        : SHORT[anchor.getMonth()] + ' ' + anchor.getDate() + ' – ' + SHORT[b.getMonth()] + ' ' + b.getDate() + ', ' + b.getFullYear();
+    } else if (st.view === 'day') {
+      rangeLabel = DOWL[dowOf(selDate)] + ', ' + MONTHS[selDate.getMonth()] + ' ' + selDate.getDate();
+    }
+
+    let monthCells = [];
+    if (st.view === 'month') {
+      const m0 = this.parse(st.monthRef); const gs = this.mondayOf(m0);
+      for (let i = 0; i < 42; i++) {
+        const dt = this.add(gs, i); const di = this.iso(dt); const inM = dt.getMonth() === m0.getMonth();
+        const list = this.eventsFor(di).sort((a, b) => (a.allDay ? -1 : a.s) - (b.allDay ? -1 : b.s));
+        const chips = list.slice(0, 3).map((ev) => ({
+          title: ev.title, time: ev.allDay ? '' : this.t(ev.s), bg: this.cal(ev.cal).bg, ring: st.selId === ev.id ? RING : '',
+          pick: () => this.select(ev.id), aria: ev.title + ', ' + MONTHS[dt.getMonth()] + ' ' + dt.getDate()
+        }));
+        monthCells.push({
+          num: dt.getDate(), chips: chips, more: list.length > 3, moreLabel: '+' + (list.length - 3) + ' more',
+          bg: inM ? '#FFFFFF' : '#FAFAF7',
+          edge: (i % 7 ? 'border-left:1px solid #E4E4DF;' : '') + (i >= 7 ? 'border-top:1px solid #E4E4DF;' : ''),
+          numStyle: di === st.today ? 'background:#171717;color:#FFFFFF;font-weight:500;' : (inM ? 'background:transparent;color:#171717;font-weight:500;' : 'background:transparent;color:#6F6F69;'),
+          open: () => this.openDay(di), aria: 'Open ' + DOWL[dowOf(dt)] + ', ' + MONTHS[dt.getMonth()] + ' ' + dt.getDate()
+        });
+      }
+    }
+
+    const mm = this.firstOf(headerMonth); const mgs = this.mondayOf(mm);
+    const weekEnd = this.add(anchor, 6);
+    const miniCells = [];
+    for (let i = 0; i < 42; i++) {
+      const dt = this.add(mgs, i); const di = this.iso(dt);
+      const inM = dt.getMonth() === mm.getMonth();
+      const inWeek = st.view === 'week' && dt >= anchor && dt <= weekEnd;
+      let style = inM ? 'color:#171717;font-weight:500;' : 'color:#6F6F69;';
+      style += inWeek ? 'background:#EAEAE6;' : 'background:transparent;';
+      if (di === st.selDay && st.view !== 'week') style = 'background:#E0E0DA;color:#171717;font-weight:600;';
+      if (di === st.today) style = 'background:#171717;color:#FFFFFF;font-weight:500;';
+      miniCells.push({ num: dt.getDate(), style: style, pick: () => this.go(di), aria: MONTHS[dt.getMonth()] + ' ' + dt.getDate() + ', ' + dt.getFullYear() });
+    }
+
+    const calList = this.cals().map((c) => {
+      const off = !!st.hidden[c.id];
+      return {
+        name: c.name, on: !off, pressed: String(!off), color: off ? '#6F6F69' : '#171717',
+        box: off ? 'background:transparent;box-shadow:inset 0 0 0 1.5px ' + c.dot + ';' : 'background:' + c.dot + ';',
+        toggle: () => { const h = Object.assign({}, this.state.hidden); h[c.id] = !h[c.id]; this.setState({ hidden: h }); }
+      };
+    });
+
+    const sev = this.getSel();
+    let sel = { who: [] };
+    if (sev) {
+      const c = this.cal(sev.cal); const sd = this.parse(sev.date);
+      const dayLong = DOWL[dowOf(sd)] + ', ' + MONTHS[sd.getMonth()] + ' ' + sd.getDate();
+      sel = {
+        title: sev.title, cat: c.name.toUpperCase(), bg: c.bg, dot: c.dot,
+        dayShort: SHORT[sd.getMonth()] + ' ' + sd.getDate() + ', ' + sd.getFullYear(),
+        when: sev.allDay ? dayLong + ' · All day' : dayLong + ' · ' + this.range(sev.s, sev.e),
+        loc: sev.loc, hasLoc: !!sev.loc, desc: sev.desc, hasDesc: !!sev.desc,
+        rem: sev.rem, rpt: sev.rpt, notes: sev.notes, hasNotes: !!sev.notes,
+        who: (sev.who || []).map((n) => ({ name: n }))
+      };
+    }
+    const swatches = this.cals().map((c) => ({
+      name: c.name, bg: c.bg, pressed: String(st.draftCal === c.id),
+      ring: st.draftCal === c.id ? 'box-shadow:0 0 0 2px #FBFBF8, 0 0 0 3.5px #171717;' : 'box-shadow:inset 0 0 0 1px rgba(23,23,23,.12);',
+      pick: () => this.setState({ draftCal: c.id })
+    }));
+
+    const n = days.length;
+    const segOn = 'background:#FFFFFF;color:#171717;box-shadow:0 1px 2px rgba(23,23,23,.08);';
+    const segOff = 'background:transparent;color:#55554F;';
+    const off = -new Date().getTimezoneOffset() / 60;
+    const navBg = (k) => (st.nav === k ? '#EAEAE6' : 'transparent');
+
+    return {
+      monthName: MONTHS[headerMonth.getMonth()], yearLabel: String(headerMonth.getFullYear()),
+      rangeLabel: rangeLabel, miniLabel: MONTHS[mm.getMonth()] + ' ' + mm.getFullYear(),
+      query: st.query, onSearch: (e) => this.setState({ query: e.target.value }),
+      isGrid: st.view !== 'month', isMonth: st.view === 'month',
+      days: days, hours: hours, monthCells: monthCells, miniCells: miniCells, calList: calList,
+      gridCols: 'grid-template-columns:64px repeat(' + Math.max(n, 1) + ', minmax(0, 1fr));',
+      gridMin: n > 1 ? 'min-width:760px;' : 'min-width:0;',
+      tzLabel: 'GMT' + (off >= 0 ? '+' : '−') + Math.abs(off),
+      gridRef: (el) => { if (el && !this._scrolled) { el.scrollTop = 64; this._scrolled = true; } },
+      seg: {
+        day: st.view === 'day' ? segOn : segOff, week: st.view === 'week' ? segOn : segOff, month: st.view === 'month' ? segOn : segOff,
+        dayOn: String(st.view === 'day'), weekOn: String(st.view === 'week'), monthOn: String(st.view === 'month')
+      },
+      navBg: { calendar: navBg('calendar'), today: navBg('today'), tasks: navBg('tasks'), search: navBg('search'), settings: navBg('settings') },
+      navCal: () => this.setState({ nav: 'calendar' }),
+      navToday: () => { this.go(this.state.today); this.setState({ nav: 'today', view: 'day' }); },
+      navTasks: () => this.setState({ nav: 'tasks' }),
+      navSearch: () => this.setState({ nav: 'search' }),
+      navSettings: () => this.setState({ nav: 'settings' }),
+      prev: () => this.step(-1), next: () => this.step(1),
+      goToday: () => this.go(this.state.today),
+      viewDay: () => this.setView('day'), viewWeek: () => this.setView('week'), viewMonth: () => this.setView('month'),
+      newEvent: () => this.newEvent(),
+      hasSel: !!sev, sel: sel, editing: st.editing, notEditing: !st.editing,
+      draftTitle: st.draftTitle, onDraft: (e) => this.setState({ draftTitle: e.target.value }),
+      swatches: swatches,
+      closeSel: () => this.setState({ selId: null, editing: false }),
+      startEdit: () => this.startEdit(), save: () => this.save(),
+      cancelEdit: () => this.setState({ editing: false }), remove: () => this.remove()
+    };
+  }
+}
+</script>
+</body>
+</html>
