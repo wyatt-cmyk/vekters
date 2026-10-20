@@ -12,7 +12,7 @@ import Link from "next/link";
 import { Trash2, X } from "lucide-react";
 import { deleteEventForm, saveEventForm } from "@/app/actions";
 import type { CalendarEvent } from "@/lib/google-calendar";
-import { describeWhen, snapshotOf, type EventSnapshot } from "@/lib/proposals";
+import { addHours, describeWhen, snapshotOf, type EventSnapshot } from "@/lib/proposals";
 import type { Tag } from "@/lib/tags";
 
 type CalendarOption = { id: string; name: string };
@@ -127,6 +127,7 @@ export function EventForm({
   event,
   defaultCalendarId,
   defaultDate,
+  defaultStart,
 }: {
   calendars: CalendarOption[];
   closeHref: string;
@@ -134,6 +135,7 @@ export function EventForm({
   event?: { id: string; calendarId: string; when: EventSnapshot; notes: string };
   defaultCalendarId?: string;
   defaultDate: string;
+  defaultStart?: string; // "HH:MM", when you tapped an empty hour on the grid
 }) {
   const when = event?.when;
   const field = "w-full rounded-card border border-line bg-bg px-3 py-2.5 focus:border-line-strong focus:outline-none";
@@ -169,11 +171,18 @@ export function EventForm({
         <div className="grid grid-cols-2 gap-3">
           <label className={label}>
             Starts
-            <input type="time" name="startTime" defaultValue={when?.startTime || "15:30"} className={`nums ${field}`} />
+            <input type="time" name="startTime" defaultValue={when?.startTime || defaultStart || "15:30"} className={`nums ${field}`} />
           </label>
           <label className={label}>
             Ends
-            <input type="time" name="endTime" defaultValue={when?.endTime ?? ""} className={`nums ${field}`} />
+            <input
+              type="time"
+              name="endTime"
+              // Tapping an hour on the grid means that hour, so fill one hour in.
+              // A blank end still becomes two hours, the rule the assistant uses.
+              defaultValue={when?.endTime ?? (defaultStart ? addHours(defaultStart, 1) : "")}
+              className={`nums ${field}`}
+            />
           </label>
         </div>
         <p className="-mt-2 text-xs text-muted">Leave the end time blank and it becomes two hours.</p>

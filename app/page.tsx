@@ -89,7 +89,7 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
           />
         </div>
 
-        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+        <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <header className="flex flex-wrap items-end gap-x-6 gap-y-4 px-6 pb-5 pt-6">
             <div className="min-w-0">
               <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted">Your calendar</p>
@@ -131,7 +131,7 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
             </div>
           </header>
 
-          <div className="flex flex-col gap-4 px-6 pb-6">
+          <div className="flex min-h-0 flex-1 flex-col gap-3 px-6 pb-6">
             {text("error") && <Notice>{text("error")}</Notice>}
             <SetupWarnings missingScopes={data.missingScopes} failedCalendars={data.failedCalendars} />
             {data.mode === "demo" && (
@@ -150,9 +150,11 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
               clock={settings.clock}
               accent={accent}
               eventHref={(event) => base({ cal: event.calendarId, ev: event.id })}
+              slotHref={(day, time) => base({ new: "1", date: day, at: time })}
+              selectedId={selected?.id}
             />
 
-            <p className="text-[12px] text-muted">Times shown in {data.timeZone}.</p>
+            <p className="shrink-0 text-[12px] text-muted">Times shown in {data.timeZone}.</p>
           </div>
         </main>
 
@@ -167,6 +169,7 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
           returnTo={closeHref}
           defaultCalendarId={(writable.find((c) => c.primary) ?? writable[0])?.id}
           defaultDate={text("date") ?? data.today}
+          defaultStart={text("at")}
         />
       )}
 

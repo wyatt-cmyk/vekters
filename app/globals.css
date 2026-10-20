@@ -75,6 +75,23 @@ body {
   font-family: var(--font-sans);
 }
 
+/* An event block tints itself from its calendar's colour: a pastel fill, a
+   slightly stronger border, and a touch more saturation on hover. --ev is set
+   inline per block. The selected block gets the design's inset dark outline. */
+.ev {
+  background-color: color-mix(in srgb, var(--ev) 16%, #ffffff);
+  border-color: color-mix(in srgb, var(--ev) 34%, #ffffff);
+  transition: background-color var(--vk-dur-fast) var(--vk-ease);
+}
+
+.ev:hover {
+  background-color: color-mix(in srgb, var(--ev) 26%, #ffffff);
+}
+
+.ev[data-selected] {
+  box-shadow: inset 0 0 0 1.5px var(--color-ink);
+}
+
 /* Tabular figures so times and dates line up column to column. */
 .nums {
   font-variant-numeric: tabular-nums;

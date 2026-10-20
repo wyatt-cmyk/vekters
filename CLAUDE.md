@@ -72,7 +72,7 @@ Today, the now line and primary buttons are ink by default. The Settings colour 
 
 ### Build phases
 1. **Done.** Tokens, fonts, brand assets, the three-column shell, the assistant rehomed to the rail, and the event block reshaped to the design (colour dot, title, time).
-2. The week hour grid: 64px an hour, 6 AM to 10 PM, time gutter, sticky header, all-day row, overlap lanes (port `layout()` from `Main.dc.html`), now line on today, click an empty slot to create.
+2. **Done.** The week hour grid: 64px an hour, time gutter, sticky header, all-day row, overlap lanes, now line on today, click an empty hour to create.
 3. Day and Month views, the mini calendar, date jumping, the view switcher.
 4. The details panel moves into the rail as a second tab, replacing the modal dialog.
 5. Search, per-calendar visibility toggles, and remapping calendar colours to the five pastels.
@@ -114,7 +114,9 @@ Drag to reschedule or resize, Tasks, a tablet layout with a collapsible sidebar.
 - `lib/google-calendar.ts` — server-only helpers that call the Google Calendar REST API, with `GoogleCalendarError` turning Google's errors into plain messages.
 - `components/setup-warnings.tsx` — banners for missing Google permissions and calendars that wouldn't load.
 - `lib/demo-data.ts` — sample calendars and events in Google's format.
-- `lib/week.ts` — date helpers. Days are plain "YYYY-MM-DD" strings; weeks start Monday.
+- `lib/week.ts` — date helpers. Days are plain "YYYY-MM-DD" strings; the week start is a setting.
+- `lib/week-layout.ts` — pure maths for the hour grid: minutes within a day, overlap lanes (ported from the design's `layout()`), the hour window, pixel boxes.
+- `components/week-client.tsx` — the only client bits of the grid: the now line and the opening scroll.
 - `lib/tags.ts` — calendar tags, stored in a cookie (per browser, no database yet), with name-based guesses.
 - `.env.local` — secrets (never committed). See `.env.local.example` and `SETUP.md`.
 
@@ -186,3 +188,14 @@ In a cookie, like the calendar tags. Each person gets their own, because nobody 
 - Motion is pure CSS scroll-driven animation (`.reveal`, `.nav-settle` in `globals.css`). Content is visible by default, so nothing depends on JavaScript, on scroll-timeline support, or on ignoring `prefers-reduced-motion`.
 - Copy carries no invented numbers or testimonials. If a real figure is ever wanted, put it in as a placeholder rather than making one up.
 - The week still in the showcase is hand-written markup, not the real `WeekGrid`, because it has no data to render. It scrolls sideways on a narrow screen.
+
+## The hour grid
+`components/week-grid.tsx` draws the week; `lib/week-layout.ts` does the maths and has no React in it.
+
+- 64px to the hour, a 64px gutter, and one CSS grid template shared by the headings, the all-day row and the body, so the three stay aligned.
+- **The hour window stretches.** The design fixes 6 AM to 10 PM; a 5 AM practice would fall off it, so `hourWindow()` widens the range to hold whatever the week contains. It never hides an event.
+- **Overlap lanes** are ported from `layout()` in `design/Main.dc.html`: group events into clusters that touch, then give each the first lane whose previous event has finished. Each block gets `width: 100/lanes %` and `left: lane * that`.
+- **All-day events** are lifted out into a sticky row; the row disappears entirely when the week has none.
+- **An event block tints itself** from its calendar's colour through `color-mix` in the `.ev` rule, so one inline `--ev` drives the fill, the border and the hover. The selected block gets the design's 1.5px inset outline.
+- **Empty hours are links** to `?new=1&date=…&at=HH:MM`, which opens the form with that hour filled in and a one-hour end, as the handoff specifies. A blank end still means two hours, which is the rule the assistant and the importer use. Those links sit outside the tab order on purpose: 112 of them would swamp keyboard navigation, and New event reaches the same form.
+- **The now line and the opening scroll** are the only parts that need the browser. The line renders nothing until mounted, so the server and the browser can't disagree about the time, and it moves every minute.
