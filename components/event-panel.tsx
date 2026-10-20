@@ -14,7 +14,7 @@ import { describeWhen, isCancelledTitle, snapshotOf } from "@/lib/proposals";
 
 type Props = {
   event: CalendarEvent;
-  color: string;
+  paint: { bg: string; dot: string };
   timeZone: string;
   closeHref: string;
   editHref: string;
@@ -22,7 +22,7 @@ type Props = {
   canEdit: boolean;
 };
 
-export function EventPanel({ event, color, timeZone, closeHref, editHref, deleteHref, canEdit }: Props) {
+export function EventPanel({ event, paint, timeZone, closeHref, editHref, deleteHref, canEdit }: Props) {
   const when = snapshotOf(event, timeZone);
   const cancelled = event.status === "cancelled" || isCancelledTitle(event.summary);
   const attendees = event.attendees ?? [];
@@ -41,10 +41,9 @@ export function EventPanel({ event, color, timeZone, closeHref, editHref, delete
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-5 pb-5 pt-5">
         <div className="mb-4 flex items-start gap-3">
-          <p
-            className="flex-1 pt-0.5 text-[11px] font-medium uppercase tracking-[0.14em]"
-            style={{ color }}
-          >
+          {/* The dot carries the colour; the words stay readable. */}
+          <p className="flex flex-1 items-center gap-2 pt-0.5 text-[11px] font-medium uppercase tracking-[0.14em] text-muted">
+            <span aria-hidden="true" className="size-2.5 rounded-[3px]" style={{ backgroundColor: paint.dot }} />
             {event.calendarName}
           </p>
           <Link

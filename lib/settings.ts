@@ -26,18 +26,26 @@ export const ACCENTS = {
   slate: { label: "Slate", hex: "#3a4a58" },
 } as const;
 
-// Calendar colours: used for the small category label on each event. All are
-// dark enough to read at 10px on white.
+// Calendar colours, straight from the design: a pastel for event blocks and a
+// darker dot for indicators and checkboxes. The dots are too light to read as
+// text, so they only ever appear as a shape; words stay ink or muted.
 export const CALENDAR_COLORS = {
-  blue: { label: "Blue", hex: "#2a52c9" },
-  green: { label: "Green", hex: "#15715a" },
-  amber: { label: "Amber", hex: "#9a4b00" },
-  purple: { label: "Purple", hex: "#6b3fa0" },
-  red: { label: "Red", hex: "#b0263c" },
-  teal: { label: "Teal", hex: "#0f6071" },
-  pink: { label: "Pink", hex: "#a32b6b" },
-  grey: { label: "Grey", hex: "#5a6360" },
+  blue: { label: "Blue", bg: "#dce7f5", dot: "#6f8fbf" },
+  green: { label: "Green", bg: "#dfebdd", dot: "#7a9f72" },
+  peach: { label: "Peach", bg: "#f5e4d5", dot: "#c08e62" },
+  pink: { label: "Pink", bg: "#f0dee4", dot: "#b97c8f" },
+  lavender: { label: "Lavender", bg: "#e8e3f3", dot: "#8c7dbe" },
 } as const;
+
+// The eight solid colours this used to offer map onto the five above, so an
+// earlier choice isn't silently thrown away.
+const LEGACY_COLORS: Record<string, ColorId> = {
+  amber: "peach",
+  purple: "lavender",
+  red: "pink",
+  teal: "blue",
+  grey: "lavender",
+};
 
 export type AccentId = keyof typeof ACCENTS;
 export type ColorId = keyof typeof CALENDAR_COLORS;
@@ -46,12 +54,19 @@ export type Clock = "12" | "24";
 
 export type Settings = {
   accent: AccentId;
+  hiddenCalendars: string[]; // calendars switched off in the sidebar
   weekStart: WeekStart;
   clock: Clock;
   colors: Record<string, ColorId>; // calendar id -> colour
 };
 
-export const DEFAULT_SETTINGS: Settings = { accent: "ink", weekStart: "mon", clock: "12", colors: {} };
+export const DEFAULT_SETTINGS: Settings = {
+  accent: "ink",
+  weekStart: "mon",
+  clock: "12",
+  colors: {},
+  hiddenCalendars: [],
+};
 
 /* ---------- checking values ---------- */
 // Everything here can arrive from a cookie or a form, so nothing is trusted.
@@ -65,13 +80,19 @@ function clean(raw: unknown): Settings {
   const value = (raw ?? {}) as Partial<Settings>;
   const colors: Record<string, ColorId> = {};
   for (const [id, color] of Object.entries(value.colors ?? {})) {
-    if (id.length <= 300 && isColor(color)) colors[id] = color;
+    if (id.length > 300) continue;
+    const mapped = isColor(color) ? color : LEGACY_COLORS[color as string];
+    if (mapped) colors[id] = mapped;
   }
+  const hiddenCalendars = (Array.isArray(value.hiddenCalendars) ? value.hiddenCalendars : [])
+    .filter((id): id is string => typeof id === "string" && id.length <= 300)
+    .slice(0, 100);
   return {
     accent: isAccent(value.accent) ? value.accent : DEFAULT_SETTINGS.accent,
     weekStart: isWeekStart(value.weekStart) ? value.weekStart : DEFAULT_SETTINGS.weekStart,
     clock: isClock(value.clock) ? value.clock : DEFAULT_SETTINGS.clock,
     colors,
+    hiddenCalendars,
   };
 }
 
@@ -100,16 +121,24 @@ export async function writeSettings(settings: Settings) {
 
 export const accentHex = (settings: Settings) => ACCENTS[settings.accent].hex;
 
+export type CalendarPaint = { bg: string; dot: string };
+
 // A calendar with no colour of its own falls back to one that matches its tag,
 // so a fresh account still looks deliberate.
-const TAG_DEFAULT: Record<Tag, ColorId> = { school: "blue", sports: "green", other: "grey" };
+const TAG_DEFAULT: Record<Tag, ColorId> = { school: "blue", sports: "green", other: "lavender" };
 
-export function colorFor(settings: Settings, calendarId: string, tag: Tag): string {
-  const chosen = settings.colors[calendarId];
-  return CALENDAR_COLORS[chosen ?? TAG_DEFAULT[tag]].hex;
+export function colorFor(settings: Settings, calendarId: string, tag: Tag): CalendarPaint {
+  const chosen = settings.colors[calendarId] ?? TAG_DEFAULT[tag];
+  const { bg, dot } = CALENDAR_COLORS[chosen];
+  return { bg, dot };
 }
 
-// Builds calendar id -> colour for every calendar, so a page resolves them once.
+// Builds calendar id -> colours for every calendar, so a page resolves them once.
 export function colorsForCalendars(settings: Settings, tagOf: Map<string, Tag>) {
   return new Map([...tagOf].map(([id, tag]) => [id, colorFor(settings, id, tag)]));
 }
+
+export const FALLBACK_PAINT: CalendarPaint = { bg: "#e8e3f3", dot: "#8c7dbe" };
+
+export const isCalendarHidden = (settings: Settings, calendarId: string) =>
+  settings.hiddenCalendars.includes(calendarId);

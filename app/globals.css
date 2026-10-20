@@ -75,17 +75,17 @@ body {
   font-family: var(--font-sans);
 }
 
-/* An event block tints itself from its calendar's colour: a pastel fill, a
-   slightly stronger border, and a touch more saturation on hover. --ev is set
-   inline per block. The selected block gets the design's inset dark outline. */
+/* An event block paints itself from its calendar's pastel, with a border and a
+   hover state mixed from the matching dot colour. Both are set inline per
+   block. The selected block gets the design's inset dark outline. */
 .ev {
-  background-color: color-mix(in srgb, var(--ev) 16%, #ffffff);
-  border-color: color-mix(in srgb, var(--ev) 34%, #ffffff);
+  background-color: var(--ev-bg);
+  border-color: color-mix(in srgb, var(--ev-dot) 38%, var(--ev-bg));
   transition: background-color var(--vk-dur-fast) var(--vk-ease);
 }
 
 .ev:hover {
-  background-color: color-mix(in srgb, var(--ev) 26%, #ffffff);
+  background-color: color-mix(in srgb, var(--ev-dot) 16%, var(--ev-bg));
 }
 
 .ev[data-selected] {

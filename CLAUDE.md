@@ -75,7 +75,7 @@ Today, the now line and primary buttons are ink by default. The Settings colour 
 2. **Done.** The week hour grid: 64px an hour, time gutter, sticky header, all-day row, overlap lanes, now line on today, click an empty hour to create.
 3. **Done.** Day and Month views, the mini calendar, date jumping, the view switcher.
 4. **Done.** The details panel moved into the rail as a second tab, replacing the modal dialog.
-5. Search, per-calendar visibility toggles, and remapping calendar colours to the five pastels.
+5. **Done.** Search, per-calendar visibility toggles, and the five pastels.
 6. Mobile day agenda and bottom sheet below 768px.
 7. Motion, reduced motion, keyboard access, focus rings.
 
@@ -121,6 +121,7 @@ Drag to reschedule or resize, Tasks, a tablet layout with a collapsible sidebar.
 - `components/week-client.tsx` — the only client bits of the grid: the now line and the opening scroll.
 - `components/month-grid.tsx` — six rows of seven days, three chips a day plus "+N more".
 - `components/mini-calendar.tsx` — the small month in the sidebar.
+- `components/search-box.tsx` — the header search; the only client component outside the chat and the grid's two helpers.
 - `lib/tags.ts` — calendar tags, stored in a cookie (per browser, no database yet), with name-based guesses.
 - `.env.local` — secrets (never committed). See `.env.local.example` and `SETUP.md`.
 
@@ -222,3 +223,12 @@ In a cookie, like the calendar tags. Each person gets their own, because nobody 
 - **The panel is an information sheet, not a popup**: a small category label in the calendar's colour, the title in Instrument Serif, then When, Where, Notes and Who. The V monogram sits behind it at very low opacity, which is what the handoff keeps it for.
 - **Fields with nothing behind them are left out, not faked.** The design shows a cover photo, reminders and recurrence; our event data has no such fields, so those sections simply don't exist. Description and attendees were added to `CalendarEvent` because Google already returns them on every event it lists, so reading them costs nothing.
 - **Edit and Delete stay dialogs.** A form wants the focus and a 316px rail is a poor place for one. The panel's buttons open the same `EventForm` and `DeleteConfirm` as before.
+
+## Colours, filtering and search
+**Five pastels, each with a dot.** `CALENDAR_COLORS` in `lib/settings.ts` is now the design's set: blue, green, peach, pink, lavender, each a pastel for event blocks plus a darker dot for indicators. **The dots are too light to read as text** — `#6F8FBF` on white is about 2.9:1 — so they only ever appear as a shape. Words stay ink, `text-on-event` or muted. The event panel's category label is muted text with a coloured square beside it, not coloured text.
+
+An event block paints itself through two inline variables, `--ev-bg` and `--ev-dot`, which the `.ev` rule in `globals.css` turns into a fill, a border and a slightly more saturated hover. The eight solid colours this used to offer are mapped onto the five, so an earlier choice isn't thrown away.
+
+**Two ways to filter, on purpose.** The header chips hide a whole category (School, Sports, Other) and live in the URL, so a filtered view can be shared. The sidebar checkboxes hide one calendar and live in settings, so they persist and apply in every view. The chips are the quick "just show me school"; the checkboxes are precise. The design only has the second; the first is this app's reason for existing.
+
+**Search** writes `?q=` after a 250ms pause and the server filters, so a search is part of the address like everything else. It matches the event title, which is what the handoff specifies. Searching a place would also be useful and is a small change if it's ever wanted.

@@ -7,11 +7,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CalendarDays, FileInput, LogOut, Settings, Sun } from "lucide-react";
+import { toggleCalendarVisibility } from "@/app/actions";
 import { signOut } from "@/auth";
 import { MiniCalendar } from "./mini-calendar";
 import type { DayKey } from "@/lib/week";
 
-type CalendarRow = { id: string; name: string; color: string };
+type CalendarRow = { id: string; name: string; dot: string; hidden: boolean };
 
 type Props = {
   mode: "demo" | "google";
@@ -74,15 +75,36 @@ export function Sidebar({ mode, userName, calendars, active, todayHref, mini }: 
 
       <div className="mt-7 px-5">
         <h2 className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted">My calendars</h2>
-        <ul className="mt-3 flex flex-col gap-2.5">
+        <ul className="mt-2 flex flex-col">
           {calendars.map((cal) => (
-            <li key={cal.id} className="flex items-center gap-2.5">
-              <span
-                aria-hidden="true"
-                className="size-2.5 shrink-0 rounded-[3px]"
-                style={{ backgroundColor: cal.color }}
-              />
-              <span className="truncate text-[13px] text-body">{cal.name}</span>
+            <li key={cal.id}>
+              {/* A plain form post, so switching a calendar off works with no
+                  JavaScript. The swatch doubles as the checkbox. */}
+              <form action={toggleCalendarVisibility}>
+                <input type="hidden" name="calendarId" value={cal.id} />
+                <button
+                  aria-pressed={!cal.hidden}
+                  className="flex min-h-9 w-full items-center gap-2.5 rounded-control px-1 text-left transition-colors duration-[var(--vk-dur-fast)] hover:bg-hover"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="grid size-[14px] shrink-0 place-items-center rounded-[4px] border"
+                    style={{
+                      backgroundColor: cal.hidden ? "transparent" : cal.dot,
+                      borderColor: cal.hidden ? "var(--color-line-strong)" : cal.dot,
+                    }}
+                  >
+                    {!cal.hidden && (
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                    )}
+                  </span>
+                  <span className={`truncate text-[13px] ${cal.hidden ? "text-faint" : "text-body"}`}>
+                    {cal.name}
+                  </span>
+                </button>
+              </form>
             </li>
           ))}
         </ul>

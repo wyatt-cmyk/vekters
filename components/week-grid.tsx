@@ -7,6 +7,7 @@
 
 import Link from "next/link";
 import type { CalendarEvent } from "@/lib/google-calendar";
+import { FALLBACK_PAINT, type CalendarPaint } from "@/lib/settings";
 import { isCancelledTitle } from "@/lib/proposals";
 import {
   boxOf,
@@ -26,7 +27,7 @@ type Props = {
   eventsByDay: Map<DayKey, CalendarEvent[]>;
   today: DayKey;
   timeZone: string;
-  colorOf: Map<string, string>; // calendar id -> the colour the student chose
+  colorOf: Map<string, CalendarPaint>; // calendar id -> its pastel and dot
   clock: "12" | "24";
   accent: string;
   eventHref: (event: CalendarEvent) => string;
@@ -106,7 +107,7 @@ export function WeekGrid({
                     <EventBlock
                       key={`${event.calendarId}-${event.id}`}
                       event={event}
-                      color={colorOf.get(event.calendarId) ?? "#6b6b66"}
+                      paint={colorOf.get(event.calendarId) ?? FALLBACK_PAINT}
                       timeZone={timeZone}
                       clock={clock}
                       href={eventHref(event)}
@@ -158,7 +159,7 @@ export function WeekGrid({
                   key={`${item.event.calendarId}-${item.event.id}`}
                   item={item}
                   startHour={startHour}
-                  color={colorOf.get(item.event.calendarId) ?? "#6b6b66"}
+                  paint={colorOf.get(item.event.calendarId) ?? FALLBACK_PAINT}
                   timeZone={timeZone}
                   clock={clock}
                   href={eventHref(item.event)}
@@ -227,7 +228,7 @@ function DayHeading({
 function PositionedEvent({
   item,
   startHour,
-  color,
+  paint,
   timeZone,
   clock,
   href,
@@ -235,7 +236,7 @@ function PositionedEvent({
 }: {
   item: Placed;
   startHour: number;
-  color: string;
+  paint: CalendarPaint;
   timeZone: string;
   clock: "12" | "24";
   href: string;
@@ -248,7 +249,7 @@ function PositionedEvent({
     <div className="absolute z-10 p-[2px]" style={{ top, height, left: `${item.lane * width}%`, width: `${width}%` }}>
       <EventBlock
         event={item.event}
-        color={color}
+        paint={paint}
         timeZone={timeZone}
         clock={clock}
         href={href}
@@ -261,7 +262,7 @@ function PositionedEvent({
 
 function EventBlock({
   event,
-  color,
+  paint,
   timeZone,
   clock,
   href,
@@ -270,7 +271,7 @@ function EventBlock({
   short,
 }: {
   event: CalendarEvent;
-  color: string;
+  paint: CalendarPaint;
   timeZone: string;
   clock: "12" | "24";
   href: string;
@@ -289,7 +290,7 @@ function EventBlock({
       href={href}
       data-selected={selected ? "" : undefined}
       aria-label={`${title}, ${when}, ${event.calendarName}`}
-      style={{ ["--ev" as string]: color }}
+      style={{ ["--ev-bg" as string]: paint.bg, ["--ev-dot" as string]: paint.dot }}
       className={`ev flex h-full flex-col overflow-hidden rounded-event border px-2 ${
         compact ? "py-[3px]" : "py-1"
       } ${cancelled ? "opacity-60" : ""}`}

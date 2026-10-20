@@ -199,3 +199,15 @@ export async function setCalendarColor(formData: FormData) {
   const current = await readSettings();
   await writeSettings({ ...current, colors: { ...current.colors, [calendarId]: color } });
 }
+
+// Switches one calendar off (or back on) from the sidebar.
+export async function toggleCalendarVisibility(formData: FormData) {
+  const calendarId = formData.get("calendarId");
+  if (typeof calendarId !== "string" || calendarId.length > 300) return;
+
+  const current = await readSettings();
+  const hiddenCalendars = current.hiddenCalendars.includes(calendarId)
+    ? current.hiddenCalendars.filter((id) => id !== calendarId)
+    : [...current.hiddenCalendars, calendarId];
+  await writeSettings({ ...current, hiddenCalendars });
+}

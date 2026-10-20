@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import type { CalendarEvent } from "@/lib/google-calendar";
+import { FALLBACK_PAINT, type CalendarPaint } from "@/lib/settings";
 import { isCancelledTitle } from "@/lib/proposals";
 import { isAllDay } from "@/lib/week-layout";
 import { formatDayNumber, formatEventTime, sameMonth, weekdayInitials, type DayKey } from "@/lib/week";
@@ -16,7 +17,7 @@ type Props = {
   today: DayKey;
   timeZone: string;
   clock: "12" | "24";
-  colorOf: Map<string, string>;
+  colorOf: Map<string, CalendarPaint>;
   accent: string;
   weekStart: "mon" | "sun";
   eventHref: (event: CalendarEvent) => string;
@@ -92,7 +93,7 @@ export function MonthGrid({
                     <Chip
                       key={`${event.calendarId}-${event.id}`}
                       event={event}
-                      color={colorOf.get(event.calendarId) ?? "#6b6b66"}
+                      paint={colorOf.get(event.calendarId) ?? FALLBACK_PAINT}
                       timeZone={timeZone}
                       clock={clock}
                       href={eventHref(event)}
@@ -120,14 +121,14 @@ export function MonthGrid({
 
 function Chip({
   event,
-  color,
+  paint,
   timeZone,
   clock,
   href,
   selected,
 }: {
   event: CalendarEvent;
-  color: string;
+  paint: CalendarPaint;
   timeZone: string;
   clock: "12" | "24";
   href: string;
@@ -145,7 +146,7 @@ function Chip({
         href={href}
         data-selected={selected ? "" : undefined}
         aria-label={`${title}, ${when}, ${event.calendarName}`}
-        style={{ ["--ev" as string]: color }}
+        style={{ ["--ev-bg" as string]: paint.bg, ["--ev-dot" as string]: paint.dot }}
         className={`ev truncate rounded-chip border px-1.5 py-[2px] text-[11px] font-medium ${
           cancelled ? "line-through opacity-60" : ""
         }`}
@@ -164,7 +165,7 @@ function Chip({
         cancelled ? "opacity-60" : ""
       }`}
     >
-      <span aria-hidden="true" className="size-[6px] shrink-0 rounded-full" style={{ backgroundColor: color }} />
+      <span aria-hidden="true" className="size-[6px] shrink-0 rounded-full" style={{ backgroundColor: paint.dot }} />
       <span className={`truncate text-[11px] ${cancelled ? "line-through" : ""}`}>{title}</span>
     </Link>
   );

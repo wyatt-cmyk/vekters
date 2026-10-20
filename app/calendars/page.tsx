@@ -124,7 +124,7 @@ export default async function SettingsPage() {
                 <span
                   aria-hidden="true"
                   className="size-3 shrink-0 rounded-full"
-                  style={{ backgroundColor: colorFor(settings, cal.id, tagOf.get(cal.id)!) }}
+                  style={{ backgroundColor: colorFor(settings, cal.id, tagOf.get(cal.id)!).dot }}
                 />
                 <span className="truncate font-semibold">{cal.summary}</span>
                 {cal.primary && <span className="text-sm font-normal text-muted">(main)</span>}
@@ -216,7 +216,7 @@ function TagButton({ tag, selected }: { tag: Tag; selected: boolean }) {
 }
 
 function ColorSwatch({ id, calendarName, selected }: { id: ColorId; calendarName: string; selected: boolean }) {
-  const { hex, label } = CALENDAR_COLORS[id];
+  const { bg, dot, label } = CALENDAR_COLORS[id];
   return (
     <button
       name="color"
@@ -226,8 +226,12 @@ function ColorSwatch({ id, calendarName, selected }: { id: ColorId; calendarName
       title={label}
       className={`grid size-11 place-items-center rounded-full ${selected ? "bg-bg ring-1 ring-ink" : "hover:bg-bg"}`}
     >
-      <span aria-hidden="true" className="grid size-6 place-items-center rounded-full" style={{ backgroundColor: hex }}>
-        {selected && <Check size={14} strokeWidth={3} className="text-white" />}
+      <span
+        aria-hidden="true"
+        className="grid size-6 place-items-center rounded-full border"
+        style={{ backgroundColor: bg, borderColor: dot }}
+      >
+        {selected && <Check size={14} strokeWidth={3} style={{ color: dot }} />}
       </span>
     </button>
   );

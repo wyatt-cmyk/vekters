@@ -15,6 +15,7 @@ import { EventPanel } from "@/components/event-panel";
 import { Landing } from "@/components/landing";
 import { MonthGrid } from "@/components/month-grid";
 import { Notice } from "@/components/notice";
+import { SearchBox } from "@/components/search-box";
 import { RightRail } from "@/components/right-rail";
 import { SetupWarnings } from "@/components/setup-warnings";
 import { Sidebar } from "@/components/sidebar";
@@ -22,7 +23,7 @@ import { WeekGrid } from "@/components/week-grid";
 import { findEvent, loadRange } from "@/lib/calendar-data";
 import { canWrite } from "@/lib/google-calendar";
 import { snapshotOf } from "@/lib/proposals";
-import { accentHex, colorsForCalendars, readSettings } from "@/lib/settings";
+import { accentHex, colorsForCalendars, FALLBACK_PAINT, readSettings } from "@/lib/settings";
 import { isTag, readSavedTags, TAG_LABELS, tagsForCalendars, type Tag } from "@/lib/tags";
 import {
   addDays,
@@ -82,7 +83,13 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
   const tagOf = tagsForCalendars(data.calendars, await readSavedTags());
   const colorOf = colorsForCalendars(settings, tagOf);
   const accent = accentHex(settings);
-  const visibleEvents = data.events.filter((event) => !hidden.has(tagOf.get(event.calendarId) ?? "other"));
+  const query = (text("q") ?? "").trim().toLowerCase();
+  const visibleEvents = data.events.filter(
+    (event) =>
+      !hidden.has(tagOf.get(event.calendarId) ?? "other") &&
+      !settings.hiddenCalendars.includes(event.calendarId) &&
+      (!query || (event.summary ?? "").toLowerCase().includes(query)),
+  );
   const eventsByDay = groupByDay(visibleEvents, days, data.timeZone);
 
   // Only offer the "Other" chip when some calendar actually is Other.
@@ -95,7 +102,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
   // or saving an event puts you back exactly where you were.
   const href = (changes: { d?: DayKey; view?: View } & Record<string, string | undefined> = {}) => {
     const { d, view: nextView, ...extra } = changes;
-    return buildHref({ d: d ?? anchor, view: nextView ?? view, hidden, extra });
+    return buildHref({ d: d ?? anchor, view: nextView ?? view, hidden, extra: { q: query || undefined, ...extra } });
   };
   const closeHref = href();
 
@@ -126,7 +133,8 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
             calendars={data.calendars.map((c) => ({
               id: c.id,
               name: c.summary,
-              color: colorOf.get(c.id) ?? "#6b6b66",
+              dot: (colorOf.get(c.id) ?? FALLBACK_PAINT).dot,
+              hidden: settings.hiddenCalendars.includes(c.id),
             }))}
             active="calendar"
             todayHref={buildHref({ view, hidden })}
@@ -189,6 +197,8 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
                 ))}
               </div>
 
+              <SearchBox initial={text("q") ?? ""} />
+
               {chipTags.map((tag) => (
                 <FilterChip
                   key={tag}
@@ -249,7 +259,11 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
               />
             )}
 
-            <p className="shrink-0 text-[12px] text-muted">Times shown in {data.timeZone}.</p>
+            <p className="shrink-0 text-[12px] text-muted">
+              {query
+                ? `${visibleEvents.length} ${visibleEvents.length === 1 ? "event" : "events"} matching “${query}”. Times in ${data.timeZone}.`
+                : `Times shown in ${data.timeZone}.`}
+            </p>
           </div>
         </main>
 
@@ -261,7 +275,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
             selected && (
               <EventPanel
                 event={selected}
-                color={colorOf.get(selected.calendarId) ?? "#6b6b66"}
+                paint={colorOf.get(selected.calendarId) ?? FALLBACK_PAINT}
                 timeZone={data.timeZone}
                 closeHref={closeHref}
                 editHref={href({ ...eventParams, edit: "1" })}
