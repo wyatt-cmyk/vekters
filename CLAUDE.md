@@ -80,9 +80,10 @@ Layout notes:
 ## Project layout (kept up to date as we build)
 - `auth.ts` — Auth.js config: Google provider, calendar scopes, token refresh.
 - `app/api/auth/[...nextauth]/route.ts` — the sign-in/sign-out endpoints Auth.js needs.
-- `app/page.tsx` — week view: week navigation (`?week=`), School/Sports/Other filter chips (`?hide=`), 7-column grid.
+- `app/page.tsx` — week view: week navigation (`?week=`), filter chips (`?hide=`), 7-column grid, and the event dialog (`?cal=&ev=`, `&edit=1`, `&del=1`, `?new=1`).
+- `components/event-dialog.tsx` — event details, the hand-edit form, and the delete confirmation.
 - `app/calendars/page.tsx` — tag each Google calendar as School, Sports, or Other.
-- `app/actions.ts` — server actions: saving calendar tags, `confirmProposal` and `confirmImport` (the ONLY code that writes events).
+- `app/actions.ts` — server actions: calendar tags, `confirmProposal`, `confirmImport`, plus `saveEventForm` and `deleteEventForm` for hand edits. These are the ONLY code that writes events.
 - `app/api/chat/route.ts` — POST endpoint for the AI chat; checks input and sign-in, runs the AI on the server.
 - `components/chat-panel.tsx` — the chat panel (client component) with confirmation cards.
 - `app/import/page.tsx` + `components/import-flow.tsx` — schedule import: input, review checklist, done.
@@ -137,3 +138,17 @@ Effort is set per job: `medium` for chat, because the student is waiting, and `h
 
 ### Why the system prompt must not change between messages
 Sonnet 5.5 ties its thinking blocks to the exact conversation that produced them. We resend the whole conversation each turn, so if the system prompt, the tool list, or an earlier message changed in between, the API rejects the request. That's why the clock time is sent with each message (`nowLine`) instead of inside the system prompt, which would otherwise differ every single time. As a second guard, every request sets `block_binding.prefix_mismatch_behavior: "drop_block"`, so a mismatch drops the stale thinking instead of failing. Keep the conversation append-only: never rewrite earlier turns.
+
+## Editing events by hand
+Added after Milestones 0-4, because an AI-only calendar can't do what other calendar apps do.
+
+- Tap any event to open it. Edit changes any field; Delete asks first, then removes it for good.
+- "New event" sits in the toolbar next to Import.
+- It is all driven by the URL, the same as the week and the filters: `?cal=<calendar id>&ev=<event id>` opens the details, `&edit=1` the form, `&del=1` the confirmation, and `?new=1&date=YYYY-MM-DD` a blank form. No browser-side state, the back button works, and an event can be linked to.
+- The forms are plain `<form action={serverAction}>` posts, so they work without JavaScript. On failure the action redirects back with `?error=`, which the page shows as a notice.
+- `saveEventForm` reuses `checkProposal` and `applyProposal`, so a hand edit obeys exactly the same rules as an AI confirmation card, including the two-hour default when the end time is blank.
+- Delete is different from cancel. Delete removes the event; cancel (via the assistant) renames it with a `Cancelled: ` prefix and keeps it. The confirmation screen says so.
+- Read-only calendars show the details with no Edit or Delete.
+
+### Still missing versus a normal calendar app
+Day and month views, an hour grid with an all-day row, jump-to-date, search, per-calendar filters, repeating events created in the app, and drag to move or resize. Reminders and invitations are deliberately left to Google Calendar, which already sends them to the student's phone.

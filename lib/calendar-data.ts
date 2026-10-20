@@ -6,8 +6,17 @@
 import "server-only";
 
 import { auth } from "@/auth";
-import { DEMO_CALENDARS, DEMO_TIME_ZONE, demoAddedEvents, demoEventsForWeek, demoOverrides, localIso } from "./demo-data";
 import {
+  DEMO_CALENDARS,
+  DEMO_TIME_ZONE,
+  demoAddedEvents,
+  demoDeleted,
+  demoEventsForWeek,
+  demoOverrides,
+  localIso,
+} from "./demo-data";
+import {
+  deleteEvent,
   getEvent,
   insertEvent,
   listCalendars,
@@ -212,21 +221,49 @@ function patchDemoEvent(eventId: string, change: (event: CalendarEvent) => Calen
   demoOverrides().set(eventId, change);
 }
 
+// Finds one event by id, for the detail panel and the edit form.
+export async function findEvent(
+  source: Source,
+  calendarId: string,
+  eventId: string,
+): Promise<CalendarEvent | null> {
+  const calendarName = source.calendars.find((c) => c.id === calendarId)?.summary ?? "";
+
+  if (source.mode === "google") {
+    try {
+      const event = await getEvent(source.accessToken!, calendarId, eventId);
+      return { ...event, calendarId, calendarName };
+    } catch {
+      return null; // deleted, or not on that calendar
+    }
+  }
+
+  // Demo mode: sample events are generated per week, so look around today.
+  const today = todayIn(source.timeZone);
+  const events = await getEventsBetween(source, addDays(today, -120), addDays(today, 240));
+  return events.find((e) => e.id === eventId && e.calendarId === calendarId) ?? null;
+}
+
 // Looks up what an existing event currently is, for the "before" on a card.
 export async function getEventSnapshot(
   source: Source,
   calendarId: string,
   eventId: string,
 ): Promise<EventSnapshot | null> {
-  if (source.mode === "google") {
-    const event = await getEvent(source.accessToken!, calendarId, eventId);
-    return snapshotOf({ ...event, calendarId, calendarName: "" }, source.timeZone);
-  }
-  // Demo mode: search the weeks around today for a matching event.
-  const today = todayIn(source.timeZone);
-  const events = await getEventsBetween(source, addDays(today, -60), addDays(today, 180));
-  const event = events.find((e) => e.id === eventId && e.calendarId === calendarId);
+  const event = await findEvent(source, calendarId, eventId);
   return event ? snapshotOf(event, source.timeZone) : null;
+}
+
+// Deletes an event for good. Only reached from the Delete button.
+export async function removeEvent(source: Source, calendarId: string, eventId: string) {
+  if (source.mode === "google") {
+    await deleteEvent(source.accessToken!, calendarId, eventId);
+    return;
+  }
+  const added = demoAddedEvents();
+  const index = added.findIndex((e) => e.id === eventId);
+  if (index >= 0) added.splice(index, 1);
+  else demoDeleted().add(eventId);
 }
 
 function errorMessage(err: unknown) {

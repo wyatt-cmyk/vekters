@@ -70,7 +70,7 @@ function explain(status: number, reason: string, googleMessage: string) {
 async function googleRequest<T>(
   accessToken: string,
   path: string,
-  options: { params?: Record<string, string>; method?: "GET" | "POST" | "PATCH"; body?: unknown } = {},
+  options: { params?: Record<string, string>; method?: "GET" | "POST" | "PATCH" | "DELETE"; body?: unknown } = {},
 ): Promise<T> {
   const url = new URL(BASE_URL + path);
   url.search = new URLSearchParams(options.params ?? {}).toString();
@@ -107,6 +107,8 @@ async function googleRequest<T>(
     throw new GoogleCalendarError(res.status, reason, explain(res.status, reason, googleMessage));
   }
 
+  // DELETE comes back empty, so there is no JSON to parse.
+  if (res.status === 204) return undefined as T;
   return res.json();
 }
 
@@ -245,5 +247,14 @@ export async function patchEvent(
     accessToken,
     `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
     { method: "PATCH", body: changes },
+  );
+}
+
+// Removes an event for good. Used by the Delete button, which asks first.
+export async function deleteEvent(accessToken: string, calendarId: string, eventId: string) {
+  await googleRequest<void>(
+    accessToken,
+    `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+    { method: "DELETE" },
   );
 }

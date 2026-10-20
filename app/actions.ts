@@ -2,10 +2,11 @@
 // Server actions: functions the browser can trigger that run on the server.
 
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
-import { applyProposal, getSource, isSignedOut } from "@/lib/calendar-data";
+import { applyProposal, getSource, isSignedOut, removeEvent } from "@/lib/calendar-data";
 import { canWrite } from "@/lib/google-calendar";
-import { checkProposal, type EventProposal } from "@/lib/proposals";
+import { addHours, checkProposal, isTime, type EventProposal } from "@/lib/proposals";
 import { isTag, readSavedTags, TAG_COOKIE } from "@/lib/tags";
 
 // Called by the School / Sports / Other buttons on the Calendars page.
@@ -84,4 +85,82 @@ export async function confirmImport(proposals: EventProposal[]): Promise<{ resul
 
   refresh();
   return { results };
+}
+
+/* ---------- editing events by hand (no AI involved) ---------- */
+
+// Only ever send the browser back to a path inside this app.
+function safeReturn(value: FormDataEntryValue | null) {
+  const path = typeof value === "string" ? value : "/";
+  return path.startsWith("/") && !path.startsWith("//") ? path : "/";
+}
+
+function withParam(path: string, key: string, value: string) {
+  const [base, query = ""] = path.split("?");
+  const params = new URLSearchParams(query);
+  params.set(key, value);
+  return `${base}?${params.toString()}`;
+}
+
+// Saves the New event / Edit event form. An empty eventId means "create".
+export async function saveEventForm(formData: FormData) {
+  const back = safeReturn(formData.get("returnTo"));
+  const eventId = String(formData.get("eventId") ?? "").trim();
+  const allDay = formData.get("allDay") === "on";
+  const startTime = allDay ? "" : String(formData.get("startTime") ?? "");
+  const rawEnd = allDay ? "" : String(formData.get("endTime") ?? "");
+
+  let error: string | null = null;
+  try {
+    const source = await getSource();
+    if (isSignedOut(source)) {
+      error = "Please sign in again.";
+    } else {
+      const calendarId = String(formData.get("calendarId") ?? "");
+      const calendar = source.calendars.filter(canWrite).find((c) => c.id === calendarId);
+
+      const proposal: EventProposal = {
+        id: eventId || crypto.randomUUID(),
+        action: eventId ? "update" : "create",
+        eventId: eventId || undefined,
+        calendarId,
+        calendarName: calendar?.summary ?? "",
+        tag: "other", // only used for card colour; the week view works it out itself
+        title: String(formData.get("title") ?? "").trim(),
+        date: String(formData.get("date") ?? ""),
+        allDay,
+        // Same rule as the AI: no end time means two hours.
+        endTime: allDay ? "" : isTime(rawEnd) ? rawEnd : isTime(startTime) ? addHours(startTime, 2) : "",
+        startTime,
+        endTimeDefaulted: false,
+        location: String(formData.get("location") ?? "").trim(),
+        notes: String(formData.get("notes") ?? "").trim(),
+      };
+
+      const problem = checkProposal(proposal, source.calendars.filter(canWrite).map((c) => c.id));
+      if (problem) error = problem;
+      else await applyProposal(source, proposal);
+    }
+  } catch (err) {
+    console.error("Save event failed:", err);
+    error = err instanceof Error ? err.message : "Couldn't save the event.";
+  }
+
+  // redirect() throws on purpose, so it has to sit outside the try block.
+  redirect(error ? withParam(back, "error", error) : back);
+}
+
+// Deletes an event. The dialog asks before this runs.
+export async function deleteEventForm(formData: FormData) {
+  const back = safeReturn(formData.get("returnTo"));
+  let error: string | null = null;
+  try {
+    const source = await getSource();
+    if (isSignedOut(source)) error = "Please sign in again.";
+    else await removeEvent(source, String(formData.get("calendarId") ?? ""), String(formData.get("eventId") ?? ""));
+  } catch (err) {
+    console.error("Delete event failed:", err);
+    error = err instanceof Error ? err.message : "Couldn't delete the event.";
+  }
+  redirect(error ? withParam(back, "error", error) : back);
 }

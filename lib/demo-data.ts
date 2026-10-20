@@ -69,9 +69,10 @@ export function demoEventsForWeek(monday: DayKey): CalendarEvent[] {
   timed(primary, 1, "18:30", "19:15", "Dentist");
   timed(primary, 6, "15:00", "17:00", "Study group", "Library");
 
-  // Apply any edits made through the chat in demo mode.
+  // Apply any edits and deletions made through the app in demo mode.
   const overrides = demoOverrides();
-  return events.map((e) => overrides.get(e.id)?.(e) ?? e);
+  const deleted = demoDeleted();
+  return events.filter((e) => !deleted.has(e.id)).map((e) => overrides.get(e.id)?.(e) ?? e);
 }
 
 // Events "added" in demo mode are kept in the server's memory, so they vanish
@@ -80,6 +81,7 @@ export function demoEventsForWeek(monday: DayKey): CalendarEvent[] {
 const memory = globalThis as unknown as {
   demoAddedEvents?: CalendarEvent[];
   demoOverrides?: Map<string, (event: CalendarEvent) => CalendarEvent>;
+  demoDeleted?: Set<string>;
 };
 
 export function demoAddedEvents(): CalendarEvent[] {
@@ -90,6 +92,11 @@ export function demoAddedEvents(): CalendarEvent[] {
 // those events on every request, so changes have to be re-applied each time.
 export function demoOverrides(): Map<string, (event: CalendarEvent) => CalendarEvent> {
   return (memory.demoOverrides ??= new Map());
+}
+
+// Ids of sample events deleted through the app in demo mode.
+export function demoDeleted(): Set<string> {
+  return (memory.demoDeleted ??= new Set());
 }
 
 

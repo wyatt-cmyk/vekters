@@ -6,14 +6,17 @@
 //   /?week=2026-09-28&hide=sports   -> same week with Sports events hidden
 
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, FileInput } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileInput, Plus } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { ChatPanel } from "@/components/chat-panel";
 import { Notice } from "@/components/notice";
 import { SetupWarnings } from "@/components/setup-warnings";
 import { SignInScreen } from "@/components/sign-in-screen";
+import { DeleteConfirm, EventDetail, EventForm } from "@/components/event-dialog";
 import { WeekGrid } from "@/components/week-grid";
-import { loadWeek } from "@/lib/calendar-data";
+import { findEvent, loadWeek } from "@/lib/calendar-data";
+import { canWrite } from "@/lib/google-calendar";
+import { snapshotOf } from "@/lib/proposals";
 import { isTag, readSavedTags, TAG_LABELS, tagsForCalendars, type Tag } from "@/lib/tags";
 import { addDays, formatWeekRange, groupByDay, weekDays, type DayKey } from "@/lib/week";
 
@@ -21,6 +24,7 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
   const params = await searchParams;
   const requestedWeek = typeof params.week === "string" ? params.week : undefined;
   const hidden = parseHidden(params.hide);
+  const text = (key: string) => (typeof params[key] === "string" ? (params[key] as string) : undefined);
 
   const data = await loadWeek(requestedWeek);
 
@@ -52,6 +56,16 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
   if ([...tagOf.values()].includes("other")) chipTags.push("other");
 
   const isThisWeek = days.includes(data.today);
+
+  // Every link keeps the week and the filters, so closing a dialog or saving an
+  // event puts you back exactly where you were.
+  const base = (extra: Record<string, string> = {}) => buildHref(requestedWeek ? data.monday : undefined, hidden, extra);
+  const closeHref = base();
+
+  const writable = data.calendars.filter(canWrite);
+  const calendarOptions = writable.map((c) => ({ id: c.id, name: c.summary }));
+  const selected =
+    text("cal") && text("ev") ? await findEvent(data, text("cal")!, text("ev")!) : null;
 
   // On wide screens (1280px+, like a Chromebook): week on the left, chat on the
   // right, each scrolling on its own. On narrower screens: chat on top.
@@ -87,6 +101,13 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
                 <FilterChip key={tag} tag={tag} monday={data.monday} hidden={hidden} />
               ))}
               <Link
+                href={base({ new: "1" })}
+                className="flex min-h-10 items-center gap-2 rounded-full border border-line-strong bg-surface px-4 text-sm font-semibold hover:bg-bg"
+              >
+                <Plus size={16} strokeWidth={2.4} />
+                New event
+              </Link>
+              <Link
                 href="/import"
                 className="flex min-h-10 items-center gap-2 rounded-full bg-ink px-5 text-sm font-semibold text-white hover:opacity-90"
               >
@@ -95,6 +116,8 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
               </Link>
             </div>
           </div>
+
+          {text("error") && <Notice>{text("error")}</Notice>}
 
           <SetupWarnings missingScopes={data.missingScopes} failedCalendars={data.failedCalendars} />
 
@@ -105,7 +128,14 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
             </Notice>
           )}
 
-          <WeekGrid days={days} eventsByDay={eventsByDay} tagOf={tagOf} today={data.today} timeZone={data.timeZone} />
+          <WeekGrid
+            days={days}
+            eventsByDay={eventsByDay}
+            tagOf={tagOf}
+            today={data.today}
+            timeZone={data.timeZone}
+            eventHref={(event) => base({ cal: event.calendarId, ev: event.id })}
+          />
 
           <p className="shrink-0 text-sm text-muted">
             Times in {data.timeZone}. Colours wrong?{" "}
@@ -118,6 +148,54 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
 
         <ChatPanel />
       </div>
+
+      {/* New event */}
+      {text("new") === "1" && calendarOptions.length > 0 && (
+        <EventForm
+          calendars={calendarOptions}
+          closeHref={closeHref}
+          returnTo={closeHref}
+          defaultCalendarId={(writable.find((c) => c.primary) ?? writable[0])?.id}
+          defaultDate={text("date") ?? data.today}
+        />
+      )}
+
+      {/* An existing event: details, or the edit form */}
+      {selected && text("del") === "1" && (
+        <DeleteConfirm
+          event={selected}
+          timeZone={data.timeZone}
+          backHref={base({ cal: selected.calendarId, ev: selected.id })}
+          returnTo={closeHref}
+        />
+      )}
+
+      {selected &&
+        text("del") !== "1" &&
+        (text("edit") === "1" ? (
+          <EventForm
+            calendars={calendarOptions}
+            closeHref={base({ cal: selected.calendarId, ev: selected.id })}
+            returnTo={closeHref}
+            defaultDate={data.today}
+            event={{
+              id: selected.id,
+              calendarId: selected.calendarId,
+              when: snapshotOf(selected, data.timeZone),
+              notes: "",
+            }}
+          />
+        ) : (
+          <EventDetail
+            event={selected}
+            tag={tagOf.get(selected.calendarId) ?? "other"}
+            timeZone={data.timeZone}
+            closeHref={closeHref}
+            editHref={base({ cal: selected.calendarId, ev: selected.id, edit: "1" })}
+            deleteHref={base({ cal: selected.calendarId, ev: selected.id, del: "1" })}
+            canEdit={writable.some((c) => c.id === selected.calendarId)}
+          />
+        ))}
     </div>
   );
 }
@@ -130,14 +208,18 @@ function parseHidden(value: string | string[] | undefined): Set<Tag> {
   return new Set(text.split(",").filter(isTag));
 }
 
-// Builds a URL for a week + hidden tags. No week means "this week".
-function weekHref(week: DayKey | undefined, hidden: Set<Tag>) {
+// Builds a URL for a week + hidden tags, plus anything else (the dialog params).
+// No week means "this week".
+function buildHref(week: DayKey | undefined, hidden: Set<Tag>, extra: Record<string, string> = {}) {
   const params = new URLSearchParams();
   if (week) params.set("week", week);
   if (hidden.size > 0) params.set("hide", [...hidden].join(","));
+  for (const [key, value] of Object.entries(extra)) params.set(key, value);
   const query = params.toString();
   return query ? `/?${query}` : "/";
 }
+
+const weekHref = (week: DayKey | undefined, hidden: Set<Tag>) => buildHref(week, hidden);
 
 function NavLink({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
   return (
