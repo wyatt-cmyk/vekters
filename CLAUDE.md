@@ -74,7 +74,7 @@ Today, the now line and primary buttons are ink by default. The Settings colour 
 1. **Done.** Tokens, fonts, brand assets, the three-column shell, the assistant rehomed to the rail, and the event block reshaped to the design (colour dot, title, time).
 2. **Done.** The week hour grid: 64px an hour, time gutter, sticky header, all-day row, overlap lanes, now line on today, click an empty hour to create.
 3. **Done.** Day and Month views, the mini calendar, date jumping, the view switcher.
-4. The details panel moves into the rail as a second tab, replacing the modal dialog.
+4. **Done.** The details panel moved into the rail as a second tab, replacing the modal dialog.
 5. Search, per-calendar visibility toggles, and remapping calendar colours to the five pastels.
 6. Mobile day agenda and bottom sheet below 768px.
 7. Motion, reduced motion, keyboard access, focus rings.
@@ -94,7 +94,9 @@ Drag to reschedule or resize, Tasks, a tablet layout with a collapsible sidebar.
 - `lib/settings.ts` — the settings type, the colour palettes, and the ONLY code that reads or writes settings storage.
 - `app/actions.ts` — server actions: calendar tags and colours, `saveSettings`, `confirmProposal`, `confirmImport`, plus `saveEventForm` and `deleteEventForm` for hand edits. These are the ONLY code that writes events.
 - `app/api/chat/route.ts` — POST endpoint for the AI chat; checks input and sign-in, runs the AI on the server.
-- `components/chat-panel.tsx` — the chat panel (client component) with confirmation cards.
+- `components/right-rail.tsx` — the 316px rail: the Assistant and Details tabs.
+- `components/event-panel.tsx` — the event details sheet shown in the rail.
+- `components/chat-panel.tsx` — the chat itself (client component) with confirmation cards. The rail owns its frame.
 - `app/import/page.tsx` + `components/import-flow.tsx` — schedule import: input, review checklist, done.
 - `app/api/import/route.ts` — POST endpoint: takes text or a PDF/image (max 4 MB) and returns review rows.
 - `lib/ai/import.ts` — asks Claude for all events as JSON (structured output), then `reviewEvents` adds warnings.
@@ -212,3 +214,11 @@ In a cookie, like the calendar tags. Each person gets their own, because nobody 
 - **The arrows follow the view**: a day, a week, or a whole month. Stepping by a week keeps the weekday, because the anchor is a real date.
 - **Tapping a day heading, or a date in Month view, opens that day on its own.** The mini calendar jumps anywhere and shades the days the main view is showing; today keeps its accent circle rather than the shade.
 - **Building URLs:** `buildHref` takes the core bits (`d`, `view`, `hidden`) separately from `extra`, so a caller can't half-override the filters. That bug bit once: a chip that cleared the last filter left `hide=` in the URL.
+
+## The right rail
+`components/right-rail.tsx` holds the assistant and the event details as two tabs. Selecting an event switches to Details; the Assistant tab goes back without dropping the selection (`?tab=chat`).
+
+- **Both panels stay mounted and one is hidden**, rather than swapping. The chat keeps its conversation and whatever is half-typed in the box. Unmounting it would throw both away, and the conversation is the server's only memory of the exchange.
+- **The panel is an information sheet, not a popup**: a small category label in the calendar's colour, the title in Instrument Serif, then When, Where, Notes and Who. The V monogram sits behind it at very low opacity, which is what the handoff keeps it for.
+- **Fields with nothing behind them are left out, not faked.** The design shows a cover photo, reminders and recurrence; our event data has no such fields, so those sections simply don't exist. Description and attendees were added to `CalendarEvent` because Google already returns them on every event it lists, so reading them costs nothing.
+- **Edit and Delete stay dialogs.** A form wants the focus and a 316px rail is a poor place for one. The panel's buttons open the same `EventForm` and `DeleteConfirm` as before.

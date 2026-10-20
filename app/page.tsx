@@ -10,11 +10,12 @@
 
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { ChatPanel } from "@/components/chat-panel";
-import { DeleteConfirm, EventDetail, EventForm } from "@/components/event-dialog";
+import { DeleteConfirm, EventForm } from "@/components/event-dialog";
+import { EventPanel } from "@/components/event-panel";
 import { Landing } from "@/components/landing";
 import { MonthGrid } from "@/components/month-grid";
 import { Notice } from "@/components/notice";
+import { RightRail } from "@/components/right-rail";
 import { SetupWarnings } from "@/components/setup-warnings";
 import { Sidebar } from "@/components/sidebar";
 import { WeekGrid } from "@/components/week-grid";
@@ -107,6 +108,11 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
   const selected = text("cal") && text("ev") ? await findEvent(data, text("cal")!, text("ev")!) : null;
 
   const miniMonth = isDayKey(text("mc")) ? text("mc")! : anchor;
+
+  // Selecting an event shows its details in the rail. The Assistant tab goes
+  // back to the chat without dropping the selection.
+  const eventParams = selected ? { cal: selected.calendarId, ev: selected.id } : {};
+  const railTab = selected && text("tab") !== "chat" ? "details" : "assistant";
 
   return (
     // The chosen colour overrides the --color-accent token for this page, so
@@ -247,7 +253,24 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
           </div>
         </main>
 
-        <ChatPanel />
+        <RightRail
+          tab={railTab}
+          assistantHref={href({ ...eventParams, tab: "chat" })}
+          detailsHref={selected ? href(eventParams) : undefined}
+          details={
+            selected && (
+              <EventPanel
+                event={selected}
+                color={colorOf.get(selected.calendarId) ?? "#6b6b66"}
+                timeZone={data.timeZone}
+                closeHref={closeHref}
+                editHref={href({ ...eventParams, edit: "1" })}
+                deleteHref={href({ ...eventParams, del: "1" })}
+                canEdit={writable.some((c) => c.id === selected.calendarId)}
+              />
+            )
+          }
+        />
       </div>
 
       {/* New event */}
@@ -272,32 +295,22 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
         />
       )}
 
-      {selected &&
-        text("del") !== "1" &&
-        (text("edit") === "1" ? (
-          <EventForm
-            calendars={calendarOptions}
-            closeHref={href({ cal: selected.calendarId, ev: selected.id })}
-            returnTo={closeHref}
-            defaultDate={anchor}
-            event={{
-              id: selected.id,
-              calendarId: selected.calendarId,
-              when: snapshotOf(selected, data.timeZone),
-              notes: "",
-            }}
-          />
-        ) : (
-          <EventDetail
-            event={selected}
-            tag={tagOf.get(selected.calendarId) ?? "other"}
-            timeZone={data.timeZone}
-            closeHref={closeHref}
-            editHref={href({ cal: selected.calendarId, ev: selected.id, edit: "1" })}
-            deleteHref={href({ cal: selected.calendarId, ev: selected.id, del: "1" })}
-            canEdit={writable.some((c) => c.id === selected.calendarId)}
-          />
-        ))}
+      {/* Editing stays a dialog: a form needs the focus, and the rail is narrow. */}
+      {selected && text("del") !== "1" && text("edit") === "1" && (
+        <EventForm
+          calendars={calendarOptions}
+          closeHref={href(eventParams)}
+          returnTo={closeHref}
+          defaultDate={anchor}
+          event={{
+            id: selected.id,
+            calendarId: selected.calendarId,
+            when: snapshotOf(selected, data.timeZone),
+            notes: selected.description ?? "",
+          }}
+        />
+      )}
+
     </div>
   );
 }

@@ -21,12 +21,21 @@ export function demoEventsForWeek(monday: DayKey): CalendarEvent[] {
   const events: CalendarEvent[] = [];
 
   // A timed event. "15:30" means 3:30 PM on this computer's clock.
-  const timed = (cal: Calendar, dayOffset: number, start: string, end: string, summary: string, location?: string) => {
+  const timed = (
+    cal: Calendar,
+    dayOffset: number,
+    start: string,
+    end: string,
+    summary: string,
+    location?: string,
+    description?: string,
+  ) => {
     const day = addDays(monday, dayOffset);
     events.push({
       id: `${cal.id}-${day}-${start}`,
       summary,
       location,
+      description,
       status: "confirmed",
       start: { dateTime: localIso(day, start) },
       end: { dateTime: localIso(day, end) },
@@ -59,10 +68,26 @@ export function demoEventsForWeek(monday: DayKey): CalendarEvent[] {
   // Sports
   timed(soccer, 0, "15:30", "17:30", "Practice", "Main field");
   timed(soccer, 1, "15:30", "17:30", "Practice", "Main field");
-  timed(soccer, 2, "18:00", "20:00", "Game vs. Lincoln High", "Home stadium");
+  timed(
+    soccer,
+    2,
+    "18:00",
+    "20:00",
+    "Game vs. Lincoln High",
+    "Home stadium",
+    "Dark jerseys. Changed and on the field by 5:15 for warm-ups.",
+  );
   timed(soccer, 3, "15:30", "17:00", "Recovery practice", "Weight room");
   timed(soccer, 4, "14:30", "15:00", "Bus departs", "Front lot");
-  timed(soccer, 4, "16:00", "18:00", "Game @ Westview", "Westview HS");
+  timed(
+    soccer,
+    4,
+    "16:00",
+    "18:00",
+    "Game @ Westview",
+    "Westview HS",
+    "Bus leaves from the front lot at 2:45. It will not wait.",
+  );
   timed(soccer, 5, "10:00", "11:00", "Film session", "Room 114");
 
   // Personal

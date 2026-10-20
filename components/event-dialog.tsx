@@ -13,7 +13,6 @@ import { Trash2, X } from "lucide-react";
 import { deleteEventForm, saveEventForm } from "@/app/actions";
 import type { CalendarEvent } from "@/lib/google-calendar";
 import { addHours, describeWhen, snapshotOf, type EventSnapshot } from "@/lib/proposals";
-import type { Tag } from "@/lib/tags";
 
 type CalendarOption = { id: string; name: string };
 
@@ -54,67 +53,6 @@ function Dialog({
         {children}
       </div>
     </div>
-  );
-}
-
-/* ---------- looking at an event ---------- */
-
-const LABEL: Record<Tag, string> = {
-  school: "text-school",
-  sports: "text-sports",
-  other: "text-muted",
-};
-
-export function EventDetail({
-  event,
-  tag,
-  timeZone,
-  closeHref,
-  editHref,
-  deleteHref,
-  canEdit,
-}: {
-  event: CalendarEvent;
-  tag: Tag;
-  timeZone: string;
-  closeHref: string;
-  editHref: string;
-  deleteHref: string;
-  canEdit: boolean;
-}) {
-  const when = snapshotOf(event, timeZone);
-
-  return (
-    <Dialog title={event.summary ?? "(no title)"} closeHref={closeHref}>
-      <div className="flex flex-col gap-3 px-5 py-4">
-        <p className={`text-[11px] font-bold uppercase tracking-wider ${LABEL[tag]}`}>{event.calendarName}</p>
-        <p className="nums font-semibold">{describeWhen({ ...when, allDay: when.allDay })}</p>
-        {event.location && <p className="text-muted">{event.location}</p>}
-        {!canEdit && (
-          <p className="text-sm text-muted">This calendar is read-only, so this event can&apos;t be changed here.</p>
-        )}
-      </div>
-
-      {canEdit && (
-        <div className="flex flex-wrap gap-2 border-t border-line px-5 py-4">
-          <Link
-            href={editHref}
-            className="flex min-h-11 flex-1 items-center justify-center rounded-full bg-ink px-5 font-semibold text-white hover:opacity-90"
-          >
-            Edit
-          </Link>
-
-          {/* Deleting asks first, on the next screen. */}
-          <Link
-            href={deleteHref}
-            className="flex min-h-11 items-center gap-2 rounded-full border border-line-strong px-5 font-semibold text-warn hover:bg-warn-fill"
-          >
-            <Trash2 size={16} strokeWidth={2.2} />
-            Delete
-          </Link>
-        </div>
-      )}
-    </Dialog>
   );
 }
 

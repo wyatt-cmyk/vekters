@@ -102,10 +102,8 @@ export function ChatPanel() {
   }
 
   return (
-    <aside className="order-first flex max-h-[60vh] flex-col border-b border-line bg-panel xl:order-none xl:max-h-none xl:w-rail xl:shrink-0 xl:border-b-0 xl:border-l">
-      <h2 className="px-5 pb-2 pt-6 text-[11px] font-medium uppercase tracking-[0.14em] text-muted">Assistant</h2>
-
-      <div ref={listRef} className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-5 py-4" aria-live="polite">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div ref={listRef} className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-5 py-5" aria-live="polite">
         {items.length === 0 && (
           <div className="text-sm text-muted">
             <p>Paste a text from your coach or teacher. Nothing changes until you tap Confirm.</p>
@@ -202,7 +200,7 @@ export function ChatPanel() {
           </button>
         </div>
       </form>
-    </aside>
+    </div>
   );
 }
 

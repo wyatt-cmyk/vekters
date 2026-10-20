@@ -17,10 +17,15 @@ export type Calendar = {
 // Google gives timed events a `dateTime` and all-day events a `date`.
 export type EventTime = { dateTime?: string; date?: string; timeZone?: string };
 
+// Google returns these on every event it lists, so reading them costs nothing.
+export type Attendee = { email?: string; displayName?: string; responseStatus?: string; self?: boolean };
+
 export type CalendarEvent = {
   id: string;
   summary?: string;
   location?: string;
+  description?: string;
+  attendees?: Attendee[];
   status: "confirmed" | "tentative" | "cancelled";
   start: EventTime;
   end: EventTime;
