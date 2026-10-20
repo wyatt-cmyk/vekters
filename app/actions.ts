@@ -7,6 +7,14 @@ import { refresh } from "next/cache";
 import { applyProposal, getSource, isSignedOut, removeEvent } from "@/lib/calendar-data";
 import { canWrite } from "@/lib/google-calendar";
 import { addHours, checkProposal, isTime, type EventProposal } from "@/lib/proposals";
+import {
+  isAccent,
+  isClock,
+  isColor,
+  isWeekStart,
+  readSettings,
+  writeSettings,
+} from "@/lib/settings";
 import { isTag, readSavedTags, TAG_COOKIE } from "@/lib/tags";
 
 // Called by the School / Sports / Other buttons on the Calendars page.
@@ -163,4 +171,31 @@ export async function deleteEventForm(formData: FormData) {
     error = err instanceof Error ? err.message : "Couldn't delete the event.";
   }
   redirect(error ? withParam(back, "error", error) : back);
+}
+
+/* ---------- personal settings ---------- */
+
+// Saves the team colour, week start and clock format from the settings form.
+export async function saveSettings(formData: FormData) {
+  const current = await readSettings();
+  const accent = formData.get("accent");
+  const weekStart = formData.get("weekStart");
+  const clock = formData.get("clock");
+
+  await writeSettings({
+    ...current,
+    accent: isAccent(accent) ? accent : current.accent,
+    weekStart: isWeekStart(weekStart) ? weekStart : current.weekStart,
+    clock: isClock(clock) ? clock : current.clock,
+  });
+}
+
+// Saves one calendar's colour.
+export async function setCalendarColor(formData: FormData) {
+  const calendarId = formData.get("calendarId");
+  const color = formData.get("color");
+  if (typeof calendarId !== "string" || calendarId.length > 300 || !isColor(color)) return;
+
+  const current = await readSettings();
+  await writeSettings({ ...current, colors: { ...current.colors, [calendarId]: color } });
 }

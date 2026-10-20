@@ -82,8 +82,9 @@ Layout notes:
 - `app/api/auth/[...nextauth]/route.ts` — the sign-in/sign-out endpoints Auth.js needs.
 - `app/page.tsx` — week view: week navigation (`?week=`), filter chips (`?hide=`), 7-column grid, and the event dialog (`?cal=&ev=`, `&edit=1`, `&del=1`, `?new=1`).
 - `components/event-dialog.tsx` — event details, the hand-edit form, and the delete confirmation.
-- `app/calendars/page.tsx` — tag each Google calendar as School, Sports, or Other.
-- `app/actions.ts` — server actions: calendar tags, `confirmProposal`, `confirmImport`, plus `saveEventForm` and `deleteEventForm` for hand edits. These are the ONLY code that writes events.
+- `app/calendars/page.tsx` — the Settings page: personal settings, plus a category and colour per calendar.
+- `lib/settings.ts` — the settings type, the colour palettes, and the ONLY code that reads or writes settings storage.
+- `app/actions.ts` — server actions: calendar tags and colours, `saveSettings`, `confirmProposal`, `confirmImport`, plus `saveEventForm` and `deleteEventForm` for hand edits. These are the ONLY code that writes events.
 - `app/api/chat/route.ts` — POST endpoint for the AI chat; checks input and sign-in, runs the AI on the server.
 - `components/chat-panel.tsx` — the chat panel (client component) with confirmation cards.
 - `app/import/page.tsx` + `components/import-flow.tsx` — schedule import: input, review checklist, done.
@@ -152,3 +153,15 @@ Added after Milestones 0-4, because an AI-only calendar can't do what other cale
 
 ### Still missing versus a normal calendar app
 Day and month views, an hour grid with an all-day row, jump-to-date, search, per-calendar filters, repeating events created in the app, and drag to move or resize. Reminders and invitations are deliberately left to Google Calendar, which already sends them to the student's phone.
+
+## Personal settings
+Each person picks their own colour, week start, clock format, and a colour per calendar. Everything is read through `lib/settings.ts`.
+
+- **Your colour** overrides the `--color-accent` token with an inline style on the week page, so every `bg-accent` and `text-accent` below it follows with no extra wiring. Six presets, all dark enough for white text.
+- **Week starts on** Monday or Sunday. `startOfWeek()` takes it; `loadWeek()` passes it through.
+- **Times** 12-hour or 24-hour. `formatEventTime()` takes it.
+- **Calendar colour** is one of eight presets per calendar, used for the small category label on each event. A calendar with no choice falls back to one that matches its tag, so a fresh account still looks deliberate. Tags still drive the filter chips; colour is only appearance.
+- Every control is a plain form posting to a server action, so settings work without JavaScript.
+
+### Where settings live, and the limit
+In a cookie, like the calendar tags. Each person gets their own, because nobody shares a browser profile, but **they do not follow you between devices**: set them again on your phone. Fixing that needs a database keyed by the Google account id. When that happens, only `readSettings` and `writeSettings` in `lib/settings.ts` change; nothing else in the app touches storage.

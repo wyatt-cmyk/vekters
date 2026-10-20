@@ -41,11 +41,14 @@ export function addDays(day: DayKey, n: number): DayKey {
   return date.toISOString().slice(0, 10);
 }
 
-// Weeks start on Monday so a weekend of games stays together.
-export function startOfWeek(day: DayKey): DayKey {
+// Which day a week starts on is a setting. Monday is the default, so a weekend
+// of games stays together; Sunday is what most US calendars do.
+export type WeekStart = "mon" | "sun";
+
+export function startOfWeek(day: DayKey, weekStart: WeekStart = "mon"): DayKey {
   const weekday = toUtcDate(day).getUTCDay(); // 0 = Sunday ... 6 = Saturday
-  const daysSinceMonday = (weekday + 6) % 7;
-  return addDays(day, -daysSinceMonday);
+  const offset = weekStart === "mon" ? (weekday + 6) % 7 : weekday;
+  return addDays(day, -offset);
 }
 
 export function weekDays(monday: DayKey): DayKey[] {
@@ -105,7 +108,7 @@ export function formatDayNumber(day: DayKey) {
   return String(toUtcDate(day).getUTCDate());
 }
 
-// "Sep 28 – Oct 4, 2026"
+// "Sep 28 – Oct 4, 2026". `monday` is whichever day the week starts on.
 export function formatWeekRange(monday: DayKey) {
   const fmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
   const sunday = addDays(monday, 6);
@@ -113,14 +116,22 @@ export function formatWeekRange(monday: DayKey) {
 }
 
 // "3:30 – 5:30 PM", "11 AM – 1 PM", or "All day"
-export function formatEventTime(event: CalendarEvent, timeZone: string) {
+export function formatEventTime(event: CalendarEvent, timeZone: string, clock: "12" | "24" = "12") {
   if (event.start.date) return "All day";
-  const fmt = (iso: string) =>
-    new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", minute: "2-digit" })
-      .format(new Date(iso))
-      .replace(":00", ""); // "3:00 PM" -> "3 PM"
+  const twelve = clock === "12";
+  const fmt = (iso: string) => {
+    const text = new Intl.DateTimeFormat("en-GB", {
+      timeZone,
+      hour: twelve ? "numeric" : "2-digit",
+      minute: "2-digit",
+      hour12: twelve,
+    }).format(new Date(iso));
+    // "3:00 pm" -> "3 PM". On a 24-hour clock "15:00" keeps its minutes.
+    return twelve ? text.toUpperCase().replace(":00", "") : text;
+  };
   const start = fmt(event.start.dateTime!);
   const end = fmt(event.end.dateTime!);
+  if (!twelve) return `${start} – ${end}`;
   // Drop the first "PM" when both times share it: "3:30 – 5:30 PM".
   const period = / ?[AP]M$/;
   const samePeriod = start.match(period)?.[0].trim() === end.match(period)?.[0].trim();

@@ -118,13 +118,13 @@ export async function loadCalendars(): Promise<CalendarsResult> {
 }
 
 // `requestedWeek` is any date in the week (from the URL). Missing or invalid -> this week.
-export async function loadWeek(requestedWeek?: string): Promise<WeekResult> {
+export async function loadWeek(requestedWeek?: string, weekStart: "mon" | "sun" = "mon"): Promise<WeekResult> {
   try {
     const source = await getSource();
     if (isSignedOut(source)) return source;
 
     const today = todayIn(source.timeZone);
-    const monday = startOfWeek(isDayKey(requestedWeek) ? requestedWeek : today);
+    const monday = startOfWeek(isDayKey(requestedWeek) ? requestedWeek : today, weekStart);
     const failedCalendars: string[] = [];
     const events = await getEventsBetween(source, monday, addDays(monday, 6), failedCalendars);
     return { status: "ok", ...source, today, monday, events, failedCalendars };

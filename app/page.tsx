@@ -17,6 +17,7 @@ import { WeekGrid } from "@/components/week-grid";
 import { findEvent, loadWeek } from "@/lib/calendar-data";
 import { canWrite } from "@/lib/google-calendar";
 import { snapshotOf } from "@/lib/proposals";
+import { accentHex, colorsForCalendars, readSettings } from "@/lib/settings";
 import { isTag, readSavedTags, TAG_LABELS, tagsForCalendars, type Tag } from "@/lib/tags";
 import { addDays, formatWeekRange, groupByDay, weekDays, type DayKey } from "@/lib/week";
 
@@ -26,12 +27,13 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
   const hidden = parseHidden(params.hide);
   const text = (key: string) => (typeof params[key] === "string" ? (params[key] as string) : undefined);
 
-  const data = await loadWeek(requestedWeek);
+  const settings = await readSettings();
+  const data = await loadWeek(requestedWeek, settings.weekStart);
 
   if (data.status === "signed-out") return <SignInScreen expired={data.expired} />;
 
   const header = (
-    <AppHeader mode={data.mode} userName={data.userName} link={{ href: "/calendars", label: "Calendars" }} />
+    <AppHeader mode={data.mode} userName={data.userName} link={{ href: "/calendars", label: "Settings" }} />
   );
 
   if (data.status === "error") {
@@ -47,6 +49,8 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
 
   // Work out each calendar's tag, then drop events from hidden tags.
   const tagOf = tagsForCalendars(data.calendars, await readSavedTags());
+  const colorOf = colorsForCalendars(settings, tagOf);
+  const accent = accentHex(settings);
   const visibleEvents = data.events.filter((event) => !hidden.has(tagOf.get(event.calendarId) ?? "other"));
   const days = weekDays(data.monday);
   const eventsByDay = groupByDay(visibleEvents, days, data.timeZone);
@@ -70,7 +74,9 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
   // On wide screens (1280px+, like a Chromebook): week on the left, chat on the
   // right, each scrolling on its own. On narrower screens: chat on top.
   return (
-    <div className="flex flex-1 flex-col xl:h-dvh">
+    // The chosen team colour overrides the --color-accent token for this page,
+    // so every bg-accent / text-accent below picks it up with no extra wiring.
+    <div className="flex flex-1 flex-col xl:h-dvh" style={{ "--color-accent": accent } as React.CSSProperties}>
       {header}
       <div className="flex min-h-0 flex-1 flex-col xl:flex-row">
         <main className="flex min-w-0 flex-1 flex-col gap-5 p-6 xl:overflow-y-auto">
@@ -131,16 +137,18 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
           <WeekGrid
             days={days}
             eventsByDay={eventsByDay}
-            tagOf={tagOf}
             today={data.today}
             timeZone={data.timeZone}
+            colorOf={colorOf}
+            clock={settings.clock}
+            accent={accent}
             eventHref={(event) => base({ cal: event.calendarId, ev: event.id })}
           />
 
           <p className="shrink-0 text-sm text-muted">
             Times in {data.timeZone}. Colours wrong?{" "}
             <Link href="/calendars" className="font-semibold text-ink underline underline-offset-2">
-              Tag your calendars
+              Change them in Settings
             </Link>
             .
           </p>
