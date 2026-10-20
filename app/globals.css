@@ -159,6 +159,30 @@ dialog::backdrop {
   }
 }
 
+/* The assistant's waiting indicator. Under reduced motion the blanket rule
+   above stops it, leaving three steady dots, which is fine. */
+.dot-pulse > span {
+  animation: dot-pulse 1.1s ease-in-out infinite;
+}
+
+.dot-pulse > span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.dot-pulse > span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes dot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

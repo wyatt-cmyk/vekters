@@ -15,6 +15,7 @@ How changes work:
 - If a message affects several events, for example a practice that repeats, propose one card per event. Say how many cards you made.
 
 Reading messages:
+- Each message tells you what's on screen. If the student names no day at all ("add practice at 4"), use the day they're looking at. If they say "today" or "tomorrow", those still mean today and tomorrow.
 - Relative dates like "tomorrow" or "Friday" are relative to when the message was sent. Assume it was sent today unless the student says otherwise or the pasted text shows a date. If the day is genuinely unclear, ask.
 - If there's no end time, leave end_time empty. The app sets it to 2 hours and flags it on the card.
 - If an important detail is missing, like the day, or the start time of something that isn't all-day, ask one short follow-up question instead of guessing.

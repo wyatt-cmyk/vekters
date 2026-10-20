@@ -5,7 +5,7 @@
 // the server (which holds the API key) talks to Claude.
 
 import { useEffect, useRef, useState } from "react";
-import { Check, CornerDownLeft, Send, X } from "lucide-react";
+import { Check, CornerDownLeft, RotateCcw, Send, SquarePen, X } from "lucide-react";
 import { confirmProposal } from "@/app/actions";
 import { cancelledTitle, changedFields, describeWhen, type EventProposal } from "@/lib/proposals";
 
@@ -13,15 +13,20 @@ type CardStatus = "pending" | "saving" | "added" | "dismissed";
 
 type Item =
   | { kind: "user"; id: string; text: string }
-  | { kind: "assistant"; id: string; text: string; isError?: boolean }
+  | { kind: "assistant"; id: string; text: string; isError?: boolean; retry?: string }
   | { kind: "proposal"; id: string; proposal: EventProposal; status: CardStatus; error?: string };
 
 const EXAMPLES = [
-  "Coach: Extra practice tomorrow 6:30am at the track, bring spikes",
-  "What does my week look like?",
+  "Coach: practice moved to 4:30 tomorrow, weight room",
+  "Game Friday is cancelled",
+  "When can I study on Thursday?",
 ];
 
-export function ChatPanel() {
+// What the student is looking at, so "add practice at 4" means the day on
+// screen rather than today.
+export type Viewing = { date: string; view: "day" | "week" | "month" };
+
+export function ChatPanel({ viewing }: { viewing?: Viewing }) {
   const [items, setItems] = useState<Item[]>([]);
   // The full conversation as the server returned it. We send it back each time
   // because the server doesn't store anything between requests.
@@ -30,6 +35,8 @@ export function ChatPanel() {
   const [notes, setNotes] = useState<string[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  // After a while, say so. A still "Thinking…" for twenty seconds reads as broken.
+  const [slow, setSlow] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const pendingCount = items.filter((i) => i.kind === "proposal" && i.status === "pending").length;
 
@@ -37,6 +44,12 @@ export function ChatPanel() {
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [items, busy]);
+
+  useEffect(() => {
+    if (!busy) return setSlow(false);
+    const timer = setTimeout(() => setSlow(true), 8000);
+    return () => clearTimeout(timer);
+  }, [busy]);
 
   async function send(text: string) {
     const message = text.trim();
@@ -49,7 +62,7 @@ export function ChatPanel() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, history, notes }),
+        body: JSON.stringify({ message, history, notes, viewing }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
@@ -63,13 +76,34 @@ export function ChatPanel() {
         ...proposals.map((p) => ({ kind: "proposal" as const, id: p.id, proposal: p, status: "pending" as const })),
       ]);
     } catch (err) {
+      // Put the message back in the box so nothing typed is lost, and offer
+      // to send it again.
+      setInput(message);
       setItems((prev) => [
         ...prev,
-        { kind: "assistant", id: crypto.randomUUID(), text: err instanceof Error ? err.message : String(err), isError: true },
+        {
+          kind: "assistant",
+          id: crypto.randomUUID(),
+          text: err instanceof Error ? err.message : String(err),
+          isError: true,
+          retry: message,
+        },
       ]);
     } finally {
       setBusy(false);
     }
+  }
+
+  // Sending again after a failure replaces the failed exchange rather than
+  // stacking a second copy of the same message under the first.
+  function retry(errorId: string, text: string) {
+    setItems((prev) => {
+      const at = prev.findIndex((item) => item.id === errorId);
+      if (at < 0) return prev;
+      const start = at > 0 && prev[at - 1].kind === "user" ? at - 1 : at;
+      return [...prev.slice(0, start), ...prev.slice(at + 1)];
+    });
+    send(text);
   }
 
   function updateCard(id: string, changes: Partial<Extract<Item, { kind: "proposal" }>>) {
@@ -96,6 +130,15 @@ export function ChatPanel() {
     }
   }
 
+  // Start over. The server keeps nothing between messages, so clearing here
+  // is all it takes.
+  function newChat() {
+    setItems([]);
+    setHistory([]);
+    setNotes([]);
+    setInput("");
+  }
+
   function dismiss(p: EventProposal) {
     updateCard(p.id, { status: "dismissed" });
     setNotes((prev) => [...prev, `The student dismissed the card for "${p.title}" on ${p.date}. Nothing changed.`]);
@@ -106,8 +149,13 @@ export function ChatPanel() {
       <div ref={listRef} className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-5 py-5" aria-live="polite">
         {items.length === 0 && (
           <div className="text-sm text-muted">
-            <p>Paste a text from your coach or teacher. Nothing changes until you tap Confirm.</p>
-            <p className="mt-3 font-semibold text-ink">Try:</p>
+            <p className="text-body">
+              Paste a text from your coach or a teacher and I&apos;ll turn it into calendar events. I can add
+              something new, move or rename what&apos;s there, mark it cancelled, or just answer questions about
+              your week.
+            </p>
+            <p className="mt-2">Nothing touches your calendar until you tap Confirm.</p>
+            <p className="mt-4 font-medium text-ink">Try one of these:</p>
             <ul className="mt-1 flex flex-col gap-2">
               {EXAMPLES.map((example) => (
                 <li key={example}>
@@ -132,13 +180,24 @@ export function ChatPanel() {
             );
           }
           if (item.kind === "assistant") {
+            if (item.isError) {
+              return (
+                <div key={item.id} className="mr-6 rounded-card border border-warn-line bg-warn-fill px-3 py-2.5">
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-warn">{item.text}</p>
+                  {item.retry && (
+                    <button
+                      onClick={() => retry(item.id, item.retry!)}
+                      className="mt-2 flex min-h-9 items-center gap-1.5 rounded-control border border-warn-line px-3 text-[13px] text-warn transition-colors duration-[var(--vk-dur-fast)] hover:bg-warn-line/40"
+                    >
+                      <RotateCcw size={14} strokeWidth={2} />
+                      Try again
+                    </button>
+                  )}
+                </div>
+              );
+            }
             return (
-              <p
-                key={item.id}
-                className={`mr-6 whitespace-pre-wrap text-sm leading-relaxed ${
-                  item.isError ? "rounded-card border border-warn-line bg-warn-fill px-3 py-2 text-warn" : "text-body"
-                }`}
-              >
+              <p key={item.id} className="mr-6 whitespace-pre-wrap text-sm leading-relaxed text-body">
                 {item.text}
               </p>
             );
@@ -146,8 +205,29 @@ export function ChatPanel() {
           return <ProposalCard key={item.id} item={item} onConfirm={confirm} onDismiss={dismiss} />;
         })}
 
-        {busy && <p className="text-sm text-muted">Thinking…</p>}
+        {busy && (
+          <div className="flex items-center gap-2.5 text-sm text-muted">
+            <span className="dot-pulse flex gap-1" aria-hidden="true">
+              <span className="size-1.5 rounded-full bg-muted" />
+              <span className="size-1.5 rounded-full bg-muted" />
+              <span className="size-1.5 rounded-full bg-muted" />
+            </span>
+            <span>{slow ? "Still reading. Long schedules take a moment." : "Thinking"}</span>
+          </div>
+        )}
       </div>
+
+      {items.length > 0 && !busy && (
+        <div className="flex justify-end px-5 pb-1">
+          <button
+            onClick={newChat}
+            className="flex min-h-9 items-center gap-1.5 rounded-control px-2 text-[12px] text-muted transition-colors duration-[var(--vk-dur-fast)] hover:bg-hover hover:text-ink"
+          >
+            <SquarePen size={13} strokeWidth={1.9} />
+            New chat
+          </button>
+        </div>
+      )}
 
       {pendingCount > 1 && (
         <div className="px-5 py-2">
@@ -176,19 +256,20 @@ export function ChatPanel() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
-            // Enter adds a new line (pasted texts often have several). Ctrl/Cmd+Enter sends.
-            if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+            // Enter sends, as in every other chat. Shift+Enter makes a new line;
+            // pasting multi-line text works either way.
+            if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
               send(input);
             }
           }}
-          rows={3}
+          rows={2}
           placeholder="Paste a message, or ask about your week…"
           className="w-full resize-none rounded-control border border-line bg-surface px-3.5 py-2.5 text-[13px] focus:border-ink focus:outline-none"
         />
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="flex items-center gap-1 text-xs text-muted">
-            <CornerDownLeft size={13} strokeWidth={2} /> Ctrl + Enter to send
+            <CornerDownLeft size={13} strokeWidth={2} /> Enter sends · Shift + Enter for a new line
           </span>
           <button
             type="submit"

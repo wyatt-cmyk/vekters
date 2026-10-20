@@ -10,12 +10,26 @@ import { readSavedTags } from "@/lib/tags";
 // Claude may think and call tools a few times, so allow up to 2 minutes.
 export const maxDuration = 120;
 
+// What the calendar is showing. Comes from the browser, so it's checked.
+type Viewing = { date: string; view: "day" | "week" | "month" };
+
+function isViewing(value: unknown): value is Viewing {
+  const v = value as Viewing | undefined;
+  return (
+    !!v &&
+    typeof v.date === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(v.date) &&
+    ["day", "week", "month"].includes(v.view)
+  );
+}
+
 export async function POST(request: Request) {
   // 1. Check the request is the shape we expect. Never trust input from the browser.
   const body = await request.json().catch(() => null);
   const message = body?.message;
   const history = body?.history;
   const notes = body?.notes;
+  const viewing = body?.viewing;
   if (
     typeof message !== "string" ||
     !message.trim() ||
@@ -23,7 +37,8 @@ export async function POST(request: Request) {
     !Array.isArray(history) ||
     !Array.isArray(notes) ||
     !notes.every((n) => typeof n === "string") ||
-    JSON.stringify(body).length > 1_000_000
+    JSON.stringify(body).length > 1_000_000 ||
+    !isViewing(viewing)
   ) {
     return Response.json({ error: "Bad request." }, { status: 400 });
   }
@@ -47,6 +62,7 @@ export async function POST(request: Request) {
       history,
       userText: message.trim(),
       appNotes: notes.slice(0, 20),
+      viewing,
     });
     return Response.json(result);
   } catch (err) {

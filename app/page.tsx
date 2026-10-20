@@ -305,6 +305,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
         <RightRail
           open={Boolean(selected) || text("tab") === "chat"}
           closeHref={closeHref}
+          viewing={{ date: anchor, view }}
           tab={railTab}
           assistantHref={href({ ...eventParams, tab: "chat" })}
           detailsHref={selected ? href(eventParams) : undefined}

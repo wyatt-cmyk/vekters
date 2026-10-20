@@ -11,7 +11,7 @@
 // conversation survives a trip to Details and back.
 
 import Link from "next/link";
-import { ChatPanel } from "./chat-panel";
+import { ChatPanel, type Viewing } from "./chat-panel";
 
 type Props = {
   tab: "assistant" | "details";
@@ -22,9 +22,10 @@ type Props = {
   // and where tapping away goes.
   open: boolean;
   closeHref: string;
+  viewing: Viewing; // what the calendar is showing, so the assistant can use it
 };
 
-export function RightRail({ tab, assistantHref, detailsHref, details, open, closeHref }: Props) {
+export function RightRail({ tab, assistantHref, detailsHref, details, open, closeHref, viewing }: Props) {
   const showDetails = tab === "details" && Boolean(details);
 
   return (
@@ -73,7 +74,7 @@ export function RightRail({ tab, assistantHref, detailsHref, details, open, clos
 
         {/* Hidden rather than unmounted: the chat keeps its conversation. */}
         <div className={`min-h-0 flex-1 ${showDetails ? "hidden" : "flex flex-col"}`}>
-          <ChatPanel />
+          <ChatPanel viewing={viewing} />
         </div>
         <div className={`min-h-0 flex-1 ${showDetails ? "flex flex-col" : "hidden"}`}>{details}</div>
       </aside>

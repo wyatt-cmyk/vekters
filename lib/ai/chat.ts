@@ -11,7 +11,7 @@ import { getEventSnapshot, getEventsBetween } from "../calendar-data";
 import { canWrite, type Calendar } from "../google-calendar";
 import { checkProposal, type EventProposal } from "../proposals";
 import { tagsForCalendars, type Tag } from "../tags";
-import { addDays, formatLongWeekday, isDayKey, todayIn, toLocalDateTime } from "../week";
+import { addDays, formatFullDate, formatLongWeekday, formatMonthOnly, isDayKey, todayIn, toLocalDateTime } from "../week";
 import { buildProposal } from "./build-proposal";
 import { MODEL, SHARED_REQUEST } from "./model";
 import { buildContext, nowLine, RULES } from "./system-prompt";
@@ -33,9 +33,10 @@ type ChatInput = {
   history: Message[];
   userText: string;
   appNotes: string[]; // e.g. "The student confirmed 'Practice'...", added before the new message
+  viewing?: { date: string; view: "day" | "week" | "month" };
 };
 
-export async function runChat({ source, savedTags, history, userText, appNotes }: ChatInput): Promise<ChatResult> {
+export async function runChat({ source, savedTags, history, userText, appNotes, viewing }: ChatInput): Promise<ChatResult> {
   // Reads ANTHROPIC_API_KEY from the environment (server only).
   const client = new Anthropic();
 
@@ -57,7 +58,12 @@ export async function runChat({ source, savedTags, history, userText, appNotes }
   ];
 
   const clock = toLocalDateTime(new Date(), source.timeZone).slice(11);
-  const userContent = [nowLine(clock), ...appNotes.map((note) => `(App note: ${note})`), userText].join("\n\n");
+  // Both of these change between messages, so they ride with the message
+  // rather than sitting in the system prompt, which has to stay identical
+  // across a conversation.
+  const userContent = [nowLine(clock), viewingLine(viewing), ...appNotes.map((note) => `(App note: ${note})`), userText]
+    .filter(Boolean)
+    .join("\n\n");
   const messages: Message[] = [...history, { role: "user", content: userContent }];
   const proposals: EventProposal[] = [];
   let reply = "";
@@ -103,6 +109,15 @@ export async function runChat({ source, savedTags, history, userText, appNotes }
   }
 
   return { history: messages, reply, proposals };
+}
+
+// Tells the assistant which day is on screen, so "add practice at 4" can mean
+// the day the student is looking at rather than today.
+function viewingLine(viewing?: { date: string; view: "day" | "week" | "month" }) {
+  if (!viewing || !isDayKey(viewing.date)) return "";
+  if (viewing.view === "month") return `(On screen: ${formatMonthOnly(viewing.date)}.)`;
+  if (viewing.view === "day") return `(On screen: ${formatFullDate(viewing.date)}.)`;
+  return `(On screen: the week containing ${formatFullDate(viewing.date)}.)`;
 }
 
 /* ---------- tools ---------- */

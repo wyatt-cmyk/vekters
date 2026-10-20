@@ -267,3 +267,13 @@ Three breakpoints, each for a reason:
 
 ### A cascade-layer trap worth remembering
 Tailwind 4 puts its utilities in `@layer utilities`. Plain CSS written in `globals.css` outside any layer is **unlayered, and unlayered styles beat layered ones**, whatever the specificity. A bare `dialog { max-width: 100vw }` silently overrode `max-w-md` on the dialog and made it full width. If a utility class mysteriously does nothing, check for an element rule in `globals.css` setting the same property.
+
+## What makes the assistant feel obvious
+Six changes, after reading the panel as a student would:
+
+- **Enter sends, Shift+Enter makes a new line.** It used to be Ctrl+Enter, which is backwards for a chat. Pasting multi-line text works either way, so there was never a reason for it.
+- **It knows what's on screen.** Every message carries the visible date and view, so "add a team meeting at 4" means the day you're looking at, not today. "Today" and "tomorrow" still mean today and tomorrow. This rides with the message, never in the system prompt, which has to stay byte-identical across a conversation (see the preserved-thinking note above).
+- **A failure doesn't eat your message.** The text goes back in the box and the error offers Try again, which replaces the failed exchange instead of stacking a second copy of the same message under the first.
+- **Waiting looks alive.** Three pulsing dots, and after eight seconds it says so, because a motionless "Thinking…" for twenty seconds reads as broken.
+- **New chat** clears the conversation. The server keeps nothing between messages, so clearing the browser's copy is the whole job.
+- **The empty state says what it can do** — add, move, rename, cancel, answer — rather than only showing two examples, and the examples now cover a change, a cancellation and a question.
