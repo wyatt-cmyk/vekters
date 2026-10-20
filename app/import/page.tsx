@@ -36,7 +36,7 @@ export default async function ImportPage() {
     <>
       {header}
       <main className="mx-auto w-full max-w-3xl px-4 py-8">
-        <h1 className="font-display text-4xl leading-none tracking-tight">Import a schedule</h1>
+        <h1 className="font-display text-4xl font-semibold tracking-tight">Import a schedule</h1>
         <p className="mb-6 mt-2 max-w-prose text-muted">
           Paste a season schedule or upload a photo of one. Every event gets found, then you pick which to keep.
           Nothing is added until you tap Add.

@@ -12,21 +12,23 @@ type Props = {
 
 export function AppHeader({ mode, userName, link }: Props) {
   return (
-    <header className="flex flex-wrap items-center gap-4 bg-ink px-4 py-3 text-white">
-      <Link href="/" className="font-display text-2xl leading-none tracking-tight">
+    <header className="flex flex-wrap items-center gap-4 border-b border-line bg-surface px-6 py-3">
+      <Link href="/" className="font-display text-xl font-semibold tracking-tight">
         Athlete Calendar
       </Link>
 
       <div className="ml-auto flex items-center gap-3">
-        {userName && <span className="hidden text-sm text-white/60 sm:inline">{userName}</span>}
+        {userName && <span className="hidden text-sm text-muted sm:inline">{userName}</span>}
         <Link
           href={link.href}
-          className="flex min-h-11 items-center border border-white/25 px-4 text-sm font-semibold hover:bg-white/10"
+          className="flex min-h-10 items-center rounded-full border border-line-strong px-4 text-sm font-semibold hover:bg-bg"
         >
           {link.label}
         </Link>
         {mode === "demo" ? (
-          <span className="bg-accent px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-accent-ink">Demo</span>
+          <span className="rounded-full bg-warn-fill px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-warn">
+            Demo
+          </span>
         ) : (
           <form
             action={async () => {
@@ -34,8 +36,8 @@ export function AppHeader({ mode, userName, link }: Props) {
               await signOut();
             }}
           >
-            <button className="flex min-h-11 items-center gap-2 border border-white/25 px-4 text-sm font-semibold hover:bg-white/10">
-              <LogOut size={16} strokeWidth={2.25} />
+            <button className="flex min-h-10 items-center gap-2 rounded-full border border-line-strong px-4 text-sm font-semibold hover:bg-bg">
+              <LogOut size={15} strokeWidth={2.2} />
               Sign out
             </button>
           </form>

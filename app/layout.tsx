@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, Instrument_Serif } from "next/font/google";
+import { Fraunces, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 
-// A sharp display serif for the wordmark, headings and day numbers, paired with
-// a clean grotesque for everything you actually read. next/font downloads both
-// at build time and exposes them as CSS variables that globals.css picks up.
-const displaySerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
+// A characterful serif for the wordmark, headings and day numbers, paired with
+// a warm humanist sans for everything you actually read. next/font downloads
+// both at build time and exposes them as CSS variables globals.css picks up.
+const displaySerif = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
-  weight: ["400"],
+  weight: ["400", "600"],
 });
 
-const bodySans = Instrument_Sans({
-  variable: "--font-instrument-sans",
+const bodySans = Hanken_Grotesk({
+  variable: "--font-hanken",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });

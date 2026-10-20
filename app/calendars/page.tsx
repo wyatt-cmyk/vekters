@@ -32,7 +32,7 @@ export default async function CalendarsPage() {
     <>
       {header}
       <main className="mx-auto w-full max-w-3xl px-4 py-8">
-        <h1 className="font-display text-4xl leading-none tracking-tight">Your calendars</h1>
+        <h1 className="font-display text-4xl font-semibold tracking-tight">Your calendars</h1>
         <p className="mb-6 mt-2 max-w-prose text-muted">
           Tag each calendar so its events get the right colour in the week. Untagged calendars are guessed from their name.
         </p>
@@ -41,7 +41,7 @@ export default async function CalendarsPage() {
           <SetupWarnings missingScopes={data.missingScopes} />
         </div>
 
-        <ul className="divide-y divide-line border border-line bg-surface">
+        <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
           {data.calendars.map((cal) => (
             <li key={cal.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
               <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: cal.backgroundColor ?? "#999" }} />
@@ -51,7 +51,7 @@ export default async function CalendarsPage() {
               </span>
 
               {/* One form, three submit buttons. The clicked button's name/value ("tag"="school") is sent. */}
-              <form action={setCalendarTag} className="flex border border-line">
+              <form action={setCalendarTag} className="flex overflow-hidden rounded-full border border-line-strong">
                 <input type="hidden" name="calendarId" value={cal.id} />
                 {TAGS.map((tag) => (
                   <TagButton key={tag} tag={tag} selected={tagOf.get(cal.id) === tag} />
@@ -78,7 +78,7 @@ function TagButton({ tag, selected }: { tag: Tag; selected: boolean }) {
       value={tag}
       aria-pressed={selected}
       className={`min-h-11 border-l border-line px-4 text-sm font-semibold first:border-l-0 ${
-        selected ? SELECTED[tag] : "bg-surface text-muted hover:text-ink"
+        selected ? SELECTED[tag] : "bg-surface text-muted hover:bg-bg hover:text-ink"
       }`}
     >
       {TAG_LABELS[tag]}

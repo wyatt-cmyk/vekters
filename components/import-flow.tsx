@@ -99,7 +99,7 @@ export function ImportFlow({ calendars }: { calendars: CalendarOption[] }) {
             onChange={(e) => setText(e.target.value)}
             rows={8}
             placeholder={"Sep 12  vs Lincoln  4:00\nSep 15  @ Westview  6:30 (bus 4:45)\n..."}
-            className="mt-2 w-full border border-line bg-surface px-3 py-2 font-mono text-sm focus:border-ink focus:outline-none"
+            className="mt-2 w-full rounded-card border border-line bg-surface px-3.5 py-3 font-mono text-sm focus:border-line-strong focus:outline-none"
           />
         </label>
 
@@ -112,7 +112,7 @@ export function ImportFlow({ calendars }: { calendars: CalendarOption[] }) {
             type="file"
             accept={ACCEPT}
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="mt-2 min-h-11 text-sm file:mr-3 file:min-h-11 file:border file:border-line file:bg-surface file:px-4 file:font-semibold hover:file:border-ink"
+            className="mt-2 min-h-11 text-sm file:mr-3 file:min-h-11 file:rounded-full file:border file:border-line-strong file:bg-surface file:px-4 file:font-semibold hover:file:bg-bg"
           />
         </div>
 
@@ -122,7 +122,7 @@ export function ImportFlow({ calendars }: { calendars: CalendarOption[] }) {
           <button
             onClick={findEvents}
             disabled={busy || (!text.trim() && !file)}
-            className="flex min-h-11 items-center gap-2 bg-ink px-6 font-semibold text-white hover:bg-ink/90 disabled:opacity-40"
+            className="flex min-h-11 items-center gap-2 rounded-full bg-ink px-6 font-semibold text-white hover:opacity-90 disabled:opacity-40"
           >
             <Upload size={16} strokeWidth={2.25} />
             {busy ? "Reading your schedule…" : "Find events"}
@@ -139,7 +139,7 @@ export function ImportFlow({ calendars }: { calendars: CalendarOption[] }) {
     const failed = outcomes.filter((o) => !o.ok);
     return (
       <div className="flex flex-col gap-4">
-        <p className="flex items-center gap-2 font-display text-3xl leading-none tracking-tight text-sports">
+        <p className="flex items-center gap-2 font-display text-3xl font-semibold tracking-tight text-sports">
           <Check size={28} strokeWidth={2.5} /> Added {added} event{added === 1 ? "" : "s"}
         </p>
         {failed.length > 0 && (
@@ -155,10 +155,10 @@ export function ImportFlow({ calendars }: { calendars: CalendarOption[] }) {
           </ErrorBox>
         )}
         <div className="flex gap-3">
-          <Link href="/" className="flex min-h-11 items-center gap-2 bg-ink px-6 font-semibold text-white hover:bg-ink/90">
+          <Link href="/" className="flex min-h-11 items-center gap-2 rounded-full bg-ink px-6 font-semibold text-white hover:opacity-90">
             See your week <ChevronRight size={16} strokeWidth={2.25} />
           </Link>
-          <button onClick={startOver} className="min-h-11 border border-line bg-surface px-5 font-semibold hover:border-ink">
+          <button onClick={startOver} className="min-h-11 rounded-full border border-line-strong bg-surface px-5 font-semibold hover:bg-bg">
             Import another
           </button>
         </div>
@@ -175,13 +175,13 @@ export function ImportFlow({ calendars }: { calendars: CalendarOption[] }) {
         </p>
         <button
           onClick={() => setItems((prev) => prev.map((item) => ({ ...item, selected: !item.problem })))}
-          className="min-h-11 border border-line bg-surface px-4 text-sm font-semibold hover:border-ink"
+          className="min-h-11 rounded-full border border-line-strong bg-surface px-4 text-sm font-semibold hover:bg-bg"
         >
           Select all
         </button>
         <button
           onClick={() => setItems((prev) => prev.map((item) => ({ ...item, selected: false })))}
-          className="min-h-11 border border-line bg-surface px-4 text-sm font-semibold hover:border-ink"
+          className="min-h-11 rounded-full border border-line-strong bg-surface px-4 text-sm font-semibold hover:bg-bg"
         >
           Select none
         </button>
@@ -189,7 +189,7 @@ export function ImportFlow({ calendars }: { calendars: CalendarOption[] }) {
 
       {scheduleNotes && <ErrorBox>{scheduleNotes}</ErrorBox>}
 
-      <ul className="divide-y divide-line border border-line bg-surface">
+      <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
         {items.map((item, index) => {
           const p = item.proposal;
           return (
@@ -213,7 +213,7 @@ export function ImportFlow({ calendars }: { calendars: CalendarOption[] }) {
                 </p>
                 {item.problem && <p className="mt-1 text-sm text-warn">Can&apos;t add: {item.problem}</p>}
                 {item.warnings.map((warning) => (
-                  <p key={warning} className="mt-1 border-l-2 border-l-warn-line bg-warn-fill px-2 py-0.5 text-sm text-warn">
+                  <p key={warning} className="mt-1 rounded-lg bg-warn-fill px-2.5 py-1 text-sm text-warn">
                     {warning}
                   </p>
                 ))}
@@ -224,7 +224,7 @@ export function ImportFlow({ calendars }: { calendars: CalendarOption[] }) {
                   value={p.calendarId}
                   onChange={(e) => changeCalendar(index, e.target.value)}
                   disabled={!!item.problem}
-                  className="min-h-11 max-w-44 border border-line bg-surface px-2 text-sm"
+                  className="min-h-11 max-w-44 rounded-full border border-line-strong bg-surface px-3 text-sm"
                 >
                   {calendars.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -245,12 +245,12 @@ export function ImportFlow({ calendars }: { calendars: CalendarOption[] }) {
         <button
           onClick={addSelected}
           disabled={busy || selectedCount === 0}
-          className="flex min-h-11 items-center gap-2 bg-ink px-6 font-semibold text-white hover:bg-ink/90 disabled:opacity-40"
+          className="flex min-h-11 items-center gap-2 rounded-full bg-ink px-6 font-semibold text-white hover:opacity-90 disabled:opacity-40"
         >
           <Check size={16} strokeWidth={2.5} />
           {busy ? "Adding…" : `Add ${selectedCount} event${selectedCount === 1 ? "" : "s"}`}
         </button>
-        <button onClick={startOver} disabled={busy} className="min-h-11 border border-line bg-surface px-5 font-semibold hover:border-ink">
+        <button onClick={startOver} disabled={busy} className="min-h-11 rounded-full border border-line-strong bg-surface px-5 font-semibold hover:bg-bg">
           Start over
         </button>
         <span className="text-sm text-muted">
@@ -262,5 +262,5 @@ export function ImportFlow({ calendars }: { calendars: CalendarOption[] }) {
 }
 
 function ErrorBox({ children }: { children: React.ReactNode }) {
-  return <div className="border border-warn-line border-l-4 border-l-warn bg-warn-fill px-4 py-3 text-warn">{children}</div>;
+  return <div className="rounded-card border border-warn-line bg-warn-fill px-4 py-3 text-warn">{children}</div>;
 }

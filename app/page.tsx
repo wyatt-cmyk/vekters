@@ -6,7 +6,7 @@
 //   /?week=2026-09-28&hide=sports   -> same week with Sports events hidden
 
 import Link from "next/link";
-import { Check, ChevronLeft, ChevronRight, FileInput, Minus } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileInput } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { ChatPanel } from "@/components/chat-panel";
 import { Notice } from "@/components/notice";
@@ -59,24 +59,24 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
     <div className="flex flex-1 flex-col xl:h-dvh">
       {header}
       <div className="flex min-h-0 flex-1 flex-col xl:flex-row">
-        <main className="flex min-w-0 flex-1 flex-col gap-4 p-4 xl:overflow-y-auto">
+        <main className="flex min-w-0 flex-1 flex-col gap-5 p-6 xl:overflow-y-auto">
           {/* Toolbar: the date leads, controls sit to the right of it. */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex">
+          <div className="flex flex-wrap items-center gap-4">
+            <h1 className="font-display text-3xl font-semibold tracking-tight">{formatWeekRange(data.monday)}</h1>
+
+            <div className="flex gap-2">
               <NavLink href={weekHref(addDays(data.monday, -7), hidden)} label="Previous week">
-                <ChevronLeft size={20} strokeWidth={2.25} />
+                <ChevronLeft size={18} strokeWidth={2.2} />
               </NavLink>
               <NavLink href={weekHref(addDays(data.monday, 7), hidden)} label="Next week">
-                <ChevronRight size={20} strokeWidth={2.25} />
+                <ChevronRight size={18} strokeWidth={2.2} />
               </NavLink>
             </div>
-
-            <h1 className="font-display text-3xl leading-none tracking-tight">{formatWeekRange(data.monday)}</h1>
 
             {!isThisWeek && (
               <Link
                 href={weekHref(undefined, hidden)}
-                className="flex min-h-11 items-center border border-line bg-surface px-4 text-sm font-semibold hover:border-ink"
+                className="flex min-h-10 items-center rounded-full border border-line-strong bg-surface px-4 text-sm font-semibold hover:bg-bg"
               >
                 This week
               </Link>
@@ -88,9 +88,9 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
               ))}
               <Link
                 href="/import"
-                className="flex min-h-11 items-center gap-2 bg-ink px-5 font-semibold text-white hover:bg-ink/90"
+                className="flex min-h-10 items-center gap-2 rounded-full bg-ink px-5 text-sm font-semibold text-white hover:opacity-90"
               >
-                <FileInput size={16} strokeWidth={2.25} />
+                <FileInput size={15} strokeWidth={2.2} />
                 Import
               </Link>
             </div>
@@ -144,17 +144,18 @@ function NavLink({ href, label, children }: { href: string; label: string; child
     <Link
       href={href}
       aria-label={label}
-      className="flex size-11 items-center justify-center border border-line bg-surface hover:border-ink -ml-px first:ml-0"
+      className="flex size-10 items-center justify-center rounded-full border border-line-strong bg-surface hover:bg-bg"
     >
       {children}
     </Link>
   );
 }
 
-const CHIP_ON: Record<Tag, string> = {
-  school: "border-school bg-school-fill text-school",
-  sports: "border-sports bg-sports-fill text-sports",
-  other: "border-ink bg-surface text-ink",
+// A dot in the category colour, so the chip reads even before you read it.
+const DOT: Record<Tag, string> = {
+  school: "bg-school",
+  sports: "bg-sports",
+  other: "bg-muted",
 };
 
 // A chip is a link that toggles its tag in the "hide" list.
@@ -168,11 +169,11 @@ function FilterChip({ tag, monday, hidden }: { tag: Tag; monday: DayKey; hidden:
     <Link
       href={weekHref(monday, next)}
       aria-label={`${isShown ? "Hide" : "Show"} ${TAG_LABELS[tag]} events`}
-      className={`flex min-h-11 items-center gap-2 border px-4 text-sm font-semibold ${
-        isShown ? CHIP_ON[tag] : "border-line bg-surface text-muted"
+      className={`flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold ${
+        isShown ? "border-line-strong bg-surface" : "border-line bg-bg text-muted"
       }`}
     >
-      {isShown ? <Check size={15} strokeWidth={3} /> : <Minus size={15} strokeWidth={3} />}
+      <span aria-hidden="true" className={`size-2.5 rounded-full ${isShown ? DOT[tag] : "bg-line-strong"}`} />
       {TAG_LABELS[tag]}
     </Link>
   );

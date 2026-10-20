@@ -3,47 +3,41 @@
 /* Design tokens. Tailwind 4 turns each --color-* into utilities, so
    --color-accent gives you bg-accent, text-accent, border-accent.
 
-   The system: one dominant grounding tone (ink, used for the header bar and
-   primary buttons), stark neutrals around it, and a single sharp accent (volt)
-   used sparingly so it always means "this is the thing right now". */
+   "Daylight": a light, calm surface that stays readable all day on a
+   Chromebook. Warm off-white ground, white cards, generous rounding, and one
+   warm accent reserved for today and the send button. */
 @theme inline {
-  --color-bg: #f2f3f5; /* cool page grey, deliberately not beige */
+  --color-bg: #f6f6f4;
   --color-surface: #ffffff;
-  --color-ink: #11131a; /* grounding tone */
-  --color-muted: #5b6069;
-  --color-line: #dbdee3;
-  --color-line-strong: #11131a;
+  --color-ink: #1c211f;
+  --color-muted: #646e6a;
+  --color-faint: #8a938e; /* weekday labels, de-emphasised dates */
+  --color-line: #e6e7e3;
+  --color-line-strong: #dddfda;
 
-  --color-accent: #d7ff3e; /* volt: today, active states, nothing else */
-  --color-accent-ink: #11131a;
+  --color-accent: #b8482a; /* today, send. white text passes contrast on it */
+  --color-accent-ink: #ffffff;
 
-  --color-school: #1b45b0;
-  --color-school-fill: #eaeffc;
-  --color-sports: #0f7a4a;
-  --color-sports-fill: #e6f4ec;
+  --color-school: #2a52c9;
+  --color-school-fill: #edf1fd;
+  --color-sports: #15715a;
+  --color-sports-fill: #eaf4ef;
+  --color-sports-line: #bfded0;
 
   --color-warn: #8a3b00;
   --color-warn-fill: #fff1dd;
   --color-warn-line: #e8b878;
 
-  --font-sans: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+
+  --radius-card: 14px;
 }
 
 body {
   background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-sans);
-}
-
-/* Square corners on form controls, which browsers round by default. The rest of
-   the UI simply doesn't use rounding: it reads as deliberate, and keeps the week
-   looking like a printed schedule rather than a deck of cards. */
-button,
-input,
-textarea,
-select {
-  border-radius: 0;
 }
 
 /* Tabular figures so times and dates line up column to column. */

@@ -5,7 +5,7 @@
 // the server (which holds the API key) talks to Claude.
 
 import { useEffect, useRef, useState } from "react";
-import { Check, CornerDownLeft, X } from "lucide-react";
+import { Check, CornerDownLeft, Send, X } from "lucide-react";
 import { confirmProposal } from "@/app/actions";
 import { cancelledTitle, changedFields, describeWhen, type EventProposal } from "@/lib/proposals";
 
@@ -103,9 +103,9 @@ export function ChatPanel() {
 
   return (
     <aside className="order-first flex max-h-[70vh] flex-col border-b border-line bg-surface xl:order-none xl:max-h-none xl:w-[380px] xl:shrink-0 xl:border-b-0 xl:border-l">
-      <h2 className="border-b border-line px-4 py-3 font-display text-2xl leading-none tracking-tight">Assistant</h2>
+      <h2 className="px-5 pb-1 pt-5 font-display text-xl font-semibold tracking-tight">Assistant</h2>
 
-      <div ref={listRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4" aria-live="polite">
+      <div ref={listRef} className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-5 py-4" aria-live="polite">
         {items.length === 0 && (
           <div className="text-sm text-muted">
             <p>Paste a text from your coach or teacher. Nothing changes until you tap Confirm.</p>
@@ -115,7 +115,7 @@ export function ChatPanel() {
                 <li key={example}>
                   <button
                     onClick={() => setInput(example)}
-                    className="min-h-11 w-full border border-line px-3 py-2 text-left hover:border-ink"
+                    className="min-h-11 w-full rounded-card border border-line px-3 py-2 text-left text-sm hover:bg-bg"
                   >
                     {example}
                   </button>
@@ -128,7 +128,7 @@ export function ChatPanel() {
         {items.map((item) => {
           if (item.kind === "user") {
             return (
-              <p key={item.id} className="ml-8 whitespace-pre-wrap bg-ink px-3 py-2 text-white">
+              <p key={item.id} className="ml-8 whitespace-pre-wrap rounded-2xl rounded-br-sm bg-bg px-3.5 py-2.5 text-sm">
                 {item.text}
               </p>
             );
@@ -137,8 +137,8 @@ export function ChatPanel() {
             return (
               <p
                 key={item.id}
-                className={`mr-8 whitespace-pre-wrap px-3 py-2 ${
-                  item.isError ? "border border-warn-line border-l-4 border-l-warn bg-warn-fill text-warn" : "border-l-2 border-l-line pl-3"
+                className={`mr-6 whitespace-pre-wrap text-sm leading-relaxed ${
+                  item.isError ? "rounded-card border border-warn-line bg-warn-fill px-3 py-2 text-warn" : "text-muted"
                 }`}
               >
                 {item.text}
@@ -152,10 +152,10 @@ export function ChatPanel() {
       </div>
 
       {pendingCount > 1 && (
-        <div className="border-t border-line px-3 py-2">
+        <div className="px-5 py-2">
           <button
             onClick={confirmAll}
-            className="flex min-h-11 w-full items-center justify-center gap-2 bg-ink px-4 font-semibold text-white hover:bg-ink/90"
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-ink px-4 font-semibold text-white hover:opacity-90"
           >
             <Check size={16} strokeWidth={2.5} />
             Confirm all {pendingCount}
@@ -164,7 +164,7 @@ export function ChatPanel() {
       )}
 
       <form
-        className="border-t border-line p-3"
+        className="px-5 pb-5 pt-2"
         onSubmit={(e) => {
           e.preventDefault();
           send(input);
@@ -186,7 +186,7 @@ export function ChatPanel() {
           }}
           rows={3}
           placeholder="Paste a message, or ask about your week…"
-          className="w-full resize-none border border-line bg-surface px-3 py-2 focus:border-ink focus:outline-none"
+          className="w-full resize-none rounded-card border border-line bg-bg px-3.5 py-2.5 text-sm focus:border-line-strong focus:outline-none"
         />
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="flex items-center gap-1 text-xs text-muted">
@@ -195,8 +195,9 @@ export function ChatPanel() {
           <button
             type="submit"
             disabled={busy || !input.trim()}
-            className="min-h-11 bg-ink px-6 font-semibold text-white hover:bg-ink/90 disabled:opacity-40"
+            className="flex min-h-11 items-center gap-2 rounded-full bg-accent px-6 font-semibold text-accent-ink hover:opacity-90 disabled:opacity-40"
           >
+            <Send size={15} strokeWidth={2.2} />
             Send
           </button>
         </div>
@@ -205,12 +206,7 @@ export function ChatPanel() {
   );
 }
 
-// Same language as the week grid: a hard left bar in the category colour.
-const BAR = {
-  school: "border-l-school",
-  sports: "border-l-sports",
-  other: "border-l-muted",
-};
+// Same language as the week grid: a small coloured category label.
 const LABEL = {
   school: "text-school",
   sports: "text-sports",
@@ -234,15 +230,15 @@ function ProposalCard({
   const changed = changedFields(p);
 
   return (
-    <div className={`border border-line border-l-[3px] bg-surface ${BAR[p.tag]} ${item.status === "dismissed" ? "opacity-50" : ""}`}>
-      <div className="px-3 pt-2">
+    <div className={`rounded-card border border-line bg-surface ${item.status === "dismissed" ? "opacity-50" : ""}`}>
+      <div className="px-4 pt-3">
         <p className={`text-[10px] font-bold uppercase tracking-widest ${LABEL[p.tag]}`}>
           {ACTION_LABEL[p.action]} · {p.calendarName}
         </p>
         <p className="font-semibold">{p.title}</p>
       </div>
 
-      <div className="px-3 py-2 text-sm">
+      <div className="px-4 py-2 text-sm">
         {p.action === "update" && p.before ? (
           <>
             {/* Show what it was, then what it becomes, so nothing is a surprise. */}
@@ -265,14 +261,14 @@ function ProposalCard({
         )}
 
         {p.endTimeDefaulted && p.action !== "cancel" && (
-          <p className="mt-2 border border-warn-line bg-warn-fill px-2 py-1 text-warn">
+          <p className="mt-2 rounded-lg border border-warn-line bg-warn-fill px-2.5 py-1.5 text-warn">
             No end time was given, so it&apos;s set to 2 hours.
           </p>
         )}
         {item.error && <p className="mt-2 text-warn">{item.error}</p>}
       </div>
 
-      <div className="flex gap-2 px-3 pb-3">
+      <div className="flex gap-2 px-4 pb-4">
         {item.status === "added" && (
           <p className="flex items-center gap-1.5 font-semibold text-sports">
             <Check size={16} strokeWidth={2.5} /> {DONE_LABEL[p.action]}
@@ -284,7 +280,7 @@ function ProposalCard({
             <button
               onClick={() => onConfirm(p)}
               disabled={item.status === "saving"}
-              className="flex min-h-11 flex-1 items-center justify-center gap-2 bg-ink font-semibold text-white hover:bg-ink/90 disabled:opacity-50"
+              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-ink font-semibold text-white hover:opacity-90 disabled:opacity-50"
             >
               {item.status === "saving" ? "Saving…" : <>
                 <Check size={16} strokeWidth={2.5} /> Confirm
@@ -293,7 +289,7 @@ function ProposalCard({
             <button
               onClick={() => onDismiss(p)}
               disabled={item.status === "saving"}
-              className="flex min-h-11 items-center gap-1.5 border border-line px-4 font-semibold hover:border-ink"
+              className="flex min-h-11 items-center gap-1.5 rounded-full border border-line-strong px-4 font-semibold hover:bg-bg"
             >
               <X size={15} strokeWidth={2.5} /> Dismiss
             </button>
