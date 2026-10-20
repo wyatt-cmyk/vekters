@@ -76,7 +76,7 @@ Today, the now line and primary buttons are ink by default. The Settings colour 
 3. **Done.** Day and Month views, the mini calendar, date jumping, the view switcher.
 4. **Done.** The details panel moved into the rail as a second tab, replacing the modal dialog.
 5. **Done.** Search, per-calendar visibility toggles, and the five pastels.
-6. Mobile day agenda and bottom sheet below 768px.
+6. **Done.** Mobile day agenda and bottom sheet below 768px.
 7. Motion, reduced motion, keyboard access, focus rings.
 
 **Nothing from the design is hardcoded.** Its events, times, attendees, notes and calendar names (School, Athletics, Personal, Social, Flight Training) are all sample data. Every view reads the real calendars.
@@ -122,6 +122,7 @@ Drag to reschedule or resize, Tasks, a tablet layout with a collapsible sidebar.
 - `components/month-grid.tsx` — six rows of seven days, three chips a day plus "+N more".
 - `components/mini-calendar.tsx` — the small month in the sidebar.
 - `components/search-box.tsx` — the header search; the only client component outside the chat and the grid's two helpers.
+- `components/mobile-day.tsx` — the phone layout: monogram, day strip, agenda.
 - `lib/tags.ts` — calendar tags, stored in a cookie (per browser, no database yet), with name-based guesses.
 - `.env.local` — secrets (never committed). See `.env.local.example` and `SETUP.md`.
 
@@ -239,3 +240,17 @@ Browser extensions edit the page before React hydrates. Grammarly adds `data-gr-
 `suppressHydrationWarning` on `<body>` covers **that one element's attributes only**. A genuine mismatch inside any component is still reported, so this doesn't hide our own bugs. Don't remove it, and don't spread it to other elements to quieten a warning: anywhere else, a mismatch is real and worth fixing.
 
 For reference, the app's own client components are already careful about this. `NowLine` renders nothing until it has mounted, so the server and the browser never disagree about the time, and every `crypto.randomUUID()` in the chat runs in an event handler rather than during render.
+
+## The phone layout
+Below 768px the week becomes an agenda, following `vekters-handoff/design/Mobile.dc.html`: the monogram, a strip of seven day pills with a dot on the days that have something, then the chosen day as a list. Each event's height still reflects how long it runs, so a two-hour game reads bigger than a thirty-minute quiz.
+
+Three breakpoints, each for a reason:
+- **Under 768px** the hour grid becomes the agenda. Seven columns at 390px is unreadable.
+- **Under 1024px** the rail rises as a bottom sheet instead of standing as a column, which is what the mobile design does with details.
+- **1024px and up** the sidebar appears and the layout is the full three columns.
+
+**Day view still loads the whole week.** The phone needs a week of days for its strip, and the desktop grid simply renders one of them. It costs one fetch either way.
+
+**The assistant gets a floating button**, next to New event. The design has no mobile home for the chat, but pasting a coach's text is something you do on a phone, so it can't be desktop-only. Both entry points open the same rail, so there is one chat in the tree and one conversation.
+
+**Closing lives in the rail**, not in the panel. On a phone the sheet closes from its own header or by tapping away; on a desktop the X appears only when Details is open, where it clears the selection. The panel used to carry its own X, which gave the phone sheet two.

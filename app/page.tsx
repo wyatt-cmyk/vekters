@@ -13,6 +13,7 @@ import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { DeleteConfirm, EventForm } from "@/components/event-dialog";
 import { EventPanel } from "@/components/event-panel";
 import { Landing } from "@/components/landing";
+import { MobileDay } from "@/components/mobile-day";
 import { MonthGrid } from "@/components/month-grid";
 import { Notice } from "@/components/notice";
 import { SearchBox } from "@/components/search-box";
@@ -36,6 +37,7 @@ import {
   isDayKey,
   startOfMonth,
   startOfWeek,
+  weekDays,
   type DayKey,
 } from "@/lib/week";
 
@@ -57,7 +59,12 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
   // One trip: work out the window from today and the time zone, then fetch it.
   const data = await loadRange(({ today }) => {
     const anchor = requested ?? today;
-    if (view === "day") return { firstDay: anchor, lastDay: anchor };
+    // Day view still loads the week: the phone shows a strip of days above
+    // the agenda, and the desktop grid simply renders one of them.
+    if (view === "day") {
+      const first = startOfWeek(anchor, weekStart);
+      return { firstDay: first, lastDay: addDays(first, 6) };
+    }
     if (view === "month") {
       const first = startOfWeek(startOfMonth(anchor), weekStart);
       return { firstDay: first, lastDay: addDays(first, 41) };
@@ -79,6 +86,8 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
 
   const anchor = requested ?? data.today;
   const days = daysBetween(data.firstDay, data.lastDay);
+  const gridDays = view === "day" ? [anchor] : days;
+  const stripDays = weekDays(startOfWeek(anchor, weekStart));
 
   const tagOf = tagsForCalendars(data.calendars, await readSavedTags());
   const colorOf = colorsForCalendars(settings, tagOf);
@@ -152,11 +161,31 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
         </div>
 
         <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          {/* Phone: an agenda for one day. An hour grid is unreadable at 390px. */}
+          <div className="flex min-h-0 flex-1 flex-col md:hidden">
+            <MobileDay
+              stripDays={stripDays}
+              anchor={anchor}
+              today={data.today}
+              eventsByDay={eventsByDay}
+              timeZone={data.timeZone}
+              clock={settings.clock}
+              colorOf={colorOf}
+              accent={accent}
+              dayHref={(day) => href({ d: day })}
+              eventHref={(event) => href({ cal: event.calendarId, ev: event.id })}
+              newHref={href({ new: "1", date: anchor })}
+              assistantHref={href({ tab: "chat" })}
+            />
+          </div>
+
+          {/* Tablet and up: the calendar proper. */}
+          <div className="hidden min-h-0 flex-1 flex-col md:flex">
           <header className="flex flex-wrap items-end gap-x-6 gap-y-4 px-6 pb-5 pt-6">
             <div className="min-w-0">
               <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted">Your calendar</p>
               <h1 className="font-display mt-1 text-[clamp(2rem,3.4vw,3.375rem)] leading-none tracking-[-0.01em]">
-                {view === "week" ? formatMonthTitle(days[0], days[days.length - 1]) : formatMonthOnly(anchor)}
+                {view === "week" ? formatMonthTitle(gridDays[0], gridDays[gridDays.length - 1]) : formatMonthOnly(anchor)}
               </h1>
               <p className="nums mt-1.5 text-[13px] text-muted">
                 {view === "day" ? formatFullDate(anchor) : view === "week" ? formatWeekRange(data.firstDay) : " "}
@@ -230,7 +259,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
 
             {view === "month" ? (
               <MonthGrid
-                days={days}
+                days={gridDays}
                 month={anchor}
                 eventsByDay={eventsByDay}
                 today={data.today}
@@ -245,7 +274,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
               />
             ) : (
               <WeekGrid
-                days={days}
+                days={gridDays}
                 eventsByDay={eventsByDay}
                 today={data.today}
                 timeZone={data.timeZone}
@@ -265,9 +294,12 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
                 : `Times shown in ${data.timeZone}.`}
             </p>
           </div>
+          </div>
         </main>
 
         <RightRail
+          open={Boolean(selected) || text("tab") === "chat"}
+          closeHref={closeHref}
           tab={railTab}
           assistantHref={href({ ...eventParams, tab: "chat" })}
           detailsHref={selected ? href(eventParams) : undefined}
@@ -277,7 +309,6 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
                 event={selected}
                 paint={colorOf.get(selected.calendarId) ?? FALLBACK_PAINT}
                 timeZone={data.timeZone}
-                closeHref={closeHref}
                 editHref={href({ ...eventParams, edit: "1" })}
                 deleteHref={href({ ...eventParams, del: "1" })}
                 canEdit={writable.some((c) => c.id === selected.calendarId)}
