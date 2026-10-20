@@ -11,7 +11,7 @@ import { AppHeader } from "@/components/app-header";
 import { ChatPanel } from "@/components/chat-panel";
 import { Notice } from "@/components/notice";
 import { SetupWarnings } from "@/components/setup-warnings";
-import { SignInScreen } from "@/components/sign-in-screen";
+import { Landing } from "@/components/landing";
 import { DeleteConfirm, EventDetail, EventForm } from "@/components/event-dialog";
 import { WeekGrid } from "@/components/week-grid";
 import { findEvent, loadWeek } from "@/lib/calendar-data";
@@ -30,7 +30,8 @@ export default async function WeekPage({ searchParams }: PageProps<"/">) {
   const settings = await readSettings();
   const data = await loadWeek(requestedWeek, settings.weekStart);
 
-  if (data.status === "signed-out") return <SignInScreen expired={data.expired} />;
+  // Not signed in: show the front door rather than a bare sign-in box.
+  if (data.status === "signed-out") return <Landing />;
 
   const header = (
     <AppHeader mode={data.mode} userName={data.userName} link={{ href: "/calendars", label: "Settings" }} />
