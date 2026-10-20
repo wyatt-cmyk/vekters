@@ -346,7 +346,7 @@ function Closing() {
               }}
             >
               <button
-                className="group flex min-h-[52px] w-full items-center justify-center gap-3 rounded-full px-7 text-[15px] font-medium transition-opacity hover:opacity-90"
+                className="on-dark group flex min-h-[52px] w-full items-center justify-center gap-3 rounded-full px-7 text-[15px] font-medium transition-opacity hover:opacity-90"
                 style={{ background: PAPER, color: INK }}
               >
                 Sign in with Google
@@ -365,7 +365,7 @@ function Closing() {
         >
           <span>Athlete Calendar</span>
           <span>Built by a student, for a team.</span>
-          <Link href="/" className="ml-auto transition-colors hover:text-[#f5f5f0]">
+          <Link href="/" className="on-dark ml-auto transition-colors hover:text-[#f5f5f0]">
             See a demo week
           </Link>
         </div>

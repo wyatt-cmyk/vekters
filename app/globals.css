@@ -97,6 +97,88 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Keyboard focus. One visible ring everywhere, since several controls here are
+   styled links and buttons whose default ring would be easy to miss. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="tab"]:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+/* On the landing page's dark bands an ink ring would vanish. */
+.on-dark:focus-visible {
+  outline-color: #f5f5f0;
+}
+
+/* Jump past the sidebar straight to the calendar. */
+.skip-link {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  padding: 10px 16px;
+  background: var(--color-ink);
+  color: #ffffff;
+  border-bottom-right-radius: var(--radius-control);
+  transform: translateY(-110%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+/* The modal dialogs used for editing and deleting. <dialog> gives focus
+   trapping, Escape and an inert background for free. */
+dialog {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+dialog::backdrop {
+  background: rgb(23 23 23 / 0.35);
+  animation: fade-in var(--vk-dur-fast) var(--vk-ease) both;
+}
+
+/* Motion, from the design: events fade in, the sheet rises, the scrim fades. */
+.ev {
+  animation: fade-in var(--vk-dur) var(--vk-ease) both;
+}
+
+.scrim {
+  animation: fade-in var(--vk-dur-fast) var(--vk-ease) both;
+}
+
+@media (max-width: 1023px) {
+  .rail-sheet {
+    animation: sheet-up var(--vk-dur-panel) var(--vk-ease) both;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
 /* Motion. Every duration collapses to zero when the reader asks for less. */
 :root {
   --vk-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -110,6 +192,17 @@ body {
     --vk-dur-fast: 0ms;
     --vk-dur: 0ms;
     --vk-dur-panel: 0ms;
+  }
+
+  /* Belt and braces: nothing moves, whatever set it going. */
+  *,
+  *::before,
+  *::after,
+  *::backdrop {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

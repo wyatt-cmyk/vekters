@@ -134,6 +134,11 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
     // The chosen colour overrides the --color-accent token for this page, so
     // every bg-accent / text-accent below picks it up with no extra wiring.
     <div className="flex h-dvh flex-col" style={{ "--color-accent": accent } as React.CSSProperties}>
+      {/* The sidebar is a lot of links to tab past. */}
+      <a href="#calendar" className="skip-link">
+        Skip to the calendar
+      </a>
+
       <div className="flex min-h-0 flex-1">
         <div className="hidden lg:flex">
           <Sidebar
@@ -160,7 +165,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
           />
         </div>
 
-        <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <main id="calendar" tabIndex={-1} className="flex min-w-0 flex-1 flex-col overflow-hidden">
           {/* Phone: an agenda for one day. An hour grid is unreadable at 390px. */}
           <div className="flex min-h-0 flex-1 flex-col md:hidden">
             <MobileDay

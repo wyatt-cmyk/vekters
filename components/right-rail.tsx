@@ -34,14 +34,14 @@ export function RightRail({ tab, assistantHref, detailsHref, details, open, clos
         <Link
           href={closeHref}
           aria-label="Close"
-          className="fixed inset-0 z-40 bg-ink/30 lg:hidden"
+          className="scrim fixed inset-0 z-40 bg-ink/30 lg:hidden"
         />
       )}
 
       <aside
         aria-label="Assistant and event details"
         className={`${
-          open ? "fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] rounded-t-sheet border-t border-line" : "hidden"
+          open ? "rail-sheet fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] rounded-t-sheet border-t border-line" : "hidden"
         } flex-col bg-panel lg:static lg:z-auto lg:flex lg:max-h-none lg:w-rail lg:shrink-0 lg:rounded-none lg:border-l lg:border-t-0`}
       >
         {/* The sheet's grab handle, as in the mobile design. */}

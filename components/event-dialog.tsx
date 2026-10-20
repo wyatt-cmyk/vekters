@@ -11,6 +11,7 @@
 import Link from "next/link";
 import { Trash2, X } from "lucide-react";
 import { deleteEventForm, saveEventForm } from "@/app/actions";
+import { Modal } from "./modal";
 import type { CalendarEvent } from "@/lib/google-calendar";
 import { addHours, describeWhen, snapshotOf, type EventSnapshot } from "@/lib/proposals";
 
@@ -18,6 +19,7 @@ type CalendarOption = { id: string; name: string };
 
 /* ---------- the shell ---------- */
 
+// A native <dialog> (see modal.tsx) wrapped in the design's header.
 function Dialog({
   title,
   closeHref,
@@ -28,31 +30,21 @@ function Dialog({
   children: React.ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4">
-      {/* The backdrop is a link, so clicking away closes the dialog. */}
-      <Link href={closeHref} aria-label="Close" className="fixed inset-0 bg-ink/35" />
-
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="event-dialog-title"
-        className="relative my-auto w-full max-w-md rounded-card border border-line bg-surface shadow-xl"
-      >
-        <div className="flex items-start gap-3 border-b border-line px-5 py-4">
-          <h2 id="event-dialog-title" className="font-display flex-1 text-xl font-semibold tracking-tight">
-            {title}
-          </h2>
-          <Link
-            href={closeHref}
-            aria-label="Close"
-            className="-m-2 flex size-10 items-center justify-center rounded-full text-muted hover:bg-bg"
-          >
-            <X size={18} strokeWidth={2.2} />
-          </Link>
-        </div>
-        {children}
+    <Modal closeHref={closeHref} labelledBy="event-dialog-title">
+      <div className="flex items-start gap-3 border-b border-line px-5 py-4">
+        <h2 id="event-dialog-title" className="font-display flex-1 text-xl tracking-[-0.01em]">
+          {title}
+        </h2>
+        <Link
+          href={closeHref}
+          aria-label="Close"
+          className="-m-2 flex size-10 items-center justify-center rounded-control text-muted transition-colors duration-[var(--vk-dur-fast)] hover:bg-hover"
+        >
+          <X size={18} strokeWidth={1.8} />
+        </Link>
       </div>
-    </div>
+      {children}
+    </Modal>
   );
 }
 
@@ -87,7 +79,7 @@ export function EventForm({
 
         <label className={label}>
           Title
-          <input name="title" required maxLength={200} defaultValue={when?.title ?? ""} className={field} />
+          <input autoFocus name="title" required maxLength={200} defaultValue={when?.title ?? ""} className={field} />
         </label>
 
         <label className={label}>

@@ -77,7 +77,7 @@ Today, the now line and primary buttons are ink by default. The Settings colour 
 4. **Done.** The details panel moved into the rail as a second tab, replacing the modal dialog.
 5. **Done.** Search, per-calendar visibility toggles, and the five pastels.
 6. **Done.** Mobile day agenda and bottom sheet below 768px.
-7. Motion, reduced motion, keyboard access, focus rings.
+7. **Done.** Motion, reduced motion, keyboard access, focus rings.
 
 **Nothing from the design is hardcoded.** Its events, times, attendees, notes and calendar names (School, Athletics, Personal, Social, Flight Training) are all sample data. Every view reads the real calendars.
 
@@ -123,6 +123,7 @@ Drag to reschedule or resize, Tasks, a tablet layout with a collapsible sidebar.
 - `components/mini-calendar.tsx` — the small month in the sidebar.
 - `components/search-box.tsx` — the header search; the only client component outside the chat and the grid's two helpers.
 - `components/mobile-day.tsx` — the phone layout: monogram, day strip, agenda.
+- `components/modal.tsx` — a native `<dialog>` wrapper; the edit and delete dialogs sit in it.
 - `lib/tags.ts` — calendar tags, stored in a cookie (per browser, no database yet), with name-based guesses.
 - `.env.local` — secrets (never committed). See `.env.local.example` and `SETUP.md`.
 
@@ -254,3 +255,15 @@ Three breakpoints, each for a reason:
 **The assistant gets a floating button**, next to New event. The design has no mobile home for the chat, but pasting a coach's text is something you do on a phone, so it can't be desktop-only. Both entry points open the same rail, so there is one chat in the tree and one conversation.
 
 **Closing lives in the rail**, not in the panel. On a phone the sheet closes from its own header or by tapping away; on a desktop the X appears only when Details is open, where it clears the selection. The panel used to carry its own X, which gave the phone sheet two.
+
+## Motion and keyboard
+**Motion** follows the design's three durations: `--vk-dur-fast` 180ms for hovers, `--vk-dur` 260ms for an event fading in, `--vk-dur-panel` 280ms for the sheet rising. Under `prefers-reduced-motion: reduce` the three collapse to zero *and* a blanket rule cuts every animation and transition, so nothing moves whatever set it going. The landing page's scroll animations already sit inside a `no-preference` query.
+
+**Dialogs are a real `<dialog>`**, opened with `showModal()` (`components/modal.tsx`). Doing it natively rather than with a positioned div gives three things that are tedious by hand: focus moves into the dialog and stays trapped, Escape closes it, and the rest of the page becomes inert to the keyboard and to screen readers. Which dialog is open is still decided by the URL, so closing navigates rather than flipping state. The first real field takes focus on open.
+
+**Focus rings** are a 2px ink outline on every link, button and field, because several controls here are styled links whose default ring is easy to miss. The landing page's dark bands use `.on-dark`, which swaps the ring to paper so it doesn't vanish.
+
+**A skip link** jumps past the sidebar to the calendar, which is otherwise a lot of links to tab through.
+
+### A cascade-layer trap worth remembering
+Tailwind 4 puts its utilities in `@layer utilities`. Plain CSS written in `globals.css` outside any layer is **unlayered, and unlayered styles beat layered ones**, whatever the specificity. A bare `dialog { max-width: 100vw }` silently overrode `max-w-md` on the dialog and made it full width. If a utility class mysteriously does nothing, check for an element rule in `globals.css` setting the same property.
