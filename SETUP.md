@@ -30,10 +30,20 @@ Google now calls this **Google Auth Platform**. Left menu → **Google Auth Plat
 
 ## 4. Create the OAuth client (this gives you the ID and secret)
 1. Left tab **Clients** (or **APIs & Services → Credentials → Create credentials → OAuth client ID**).
-2. Application type: **Web application**. Name: `Vekters (local)`.
-3. **Authorized JavaScript origins**: `http://localhost:3000`
-4. **Authorized redirect URIs**: `http://localhost:3000/api/auth/callback/google`
-   (This exact path is where Auth.js receives the login. Any typo here causes a `redirect_uri_mismatch` error.)
+2. Application type: **Web application**. Name: `Vekters`.
+3. **Authorized JavaScript origins** — add BOTH:
+   ```
+   http://localhost:3000
+   https://vekters.vercel.app
+   ```
+4. **Authorized redirect URIs** — add BOTH:
+   ```
+   http://localhost:3000/api/auth/callback/google
+   https://vekters.vercel.app/api/auth/callback/google
+   ```
+   That exact path is where Auth.js receives the login. Any typo causes `redirect_uri_mismatch`. No trailing slashes.
+
+   Add all four in one visit. The app is already deployed, so there's no reason to come back for the production pair later.
 5. **Create**. Copy the **Client ID** and **Client secret**.
 
 ## 5. Fill in `.env.local`
@@ -67,8 +77,18 @@ The chat works in demo mode too, but it needs this key either way.
 
 Never paste this key into chat, code, or a commit. It stays in `.env.local` on the server only.
 
-## When you deploy to Vercel (Milestone 7)
-Add a second redirect URI to the same OAuth client: `https://<your-app>.vercel.app/api/auth/callback/google`, and set the env vars (`AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `ANTHROPIC_API_KEY`) in the Vercel project settings. Don't deploy with demo mode on: in demo mode the chat has no sign-in, so anyone with the link could use your Anthropic credits.
+## The deployed copy
+Live at **https://vekters.vercel.app** (Vercel project `vekters`). `AUTH_SECRET` and `ANTHROPIC_API_KEY` are already set there as encrypted secrets. Once you have the Google pair, add it too:
+
+```
+vercel env add AUTH_GOOGLE_ID production
+vercel env add AUTH_GOOGLE_SECRET production
+vercel deploy --prod
+```
+
+A changed environment variable needs a redeploy; Vercel does not pick it up on its own.
+
+Don't set `DEMO_MODE` in production. In demo mode the chat has no sign-in, so anyone with the link could spend your Anthropic credits. The code refuses to turn demo mode on by itself in production for exactly this reason.
 
 ## Common errors
 The app now turns Google's errors into plain messages. Here's what each one means.
