@@ -2,9 +2,14 @@
 
 Once this is done the app lives on a real URL, works on your phone, and your teammates can sign in.
 
-## Before you start
+## Do it in this order
 
-Finish `SETUP.md` first. You need a working Google OAuth client and an Anthropic API key, because **a deployment without Google credentials can't sign anyone in**. It will just say "Not set up yet".
+It's tempting to finish `SETUP.md` first, but **deploy before you set up Google**. Google needs to know the production URL, and you don't have one until Vercel gives you it. Doing it this way means one visit to Google Cloud instead of two.
+
+1. Deploy to Vercel with the two keys you already have. The site will say "Not set up yet", which is correct.
+2. Copy the URL Vercel gives you.
+3. Do the Google Cloud setup in `SETUP.md`, adding **both** the localhost and the production redirect URIs while you're there.
+4. Add the two Google variables to Vercel and redeploy.
 
 ## 1. Create the Vercel project
 
@@ -12,11 +17,11 @@ Finish `SETUP.md` first. You need a working Google OAuth client and an Anthropic
 2. Click **Add New → Project**.
 3. Find the `vekters` repository and click **Import**. If Vercel can't see it, click **Adjust GitHub App Permissions** and give it access.
 4. Leave every build setting alone. Vercel detects Next.js on its own.
-5. **Don't deploy yet.** Open **Environment Variables** first and add the four below.
+5. **Don't deploy yet.** Open **Environment Variables** first and add what you have.
 
 ## 2. Environment variables
 
-Add all four, to Production, Preview and Development:
+Add these to Production, Preview and Development. The first two you already have; the Google pair comes after the first deploy.
 
 | Name | Where it comes from |
 | --- | --- |
@@ -27,17 +32,24 @@ Add all four, to Production, Preview and Development:
 
 **Do not set `DEMO_MODE`.** It is off in production unless you ask for it by name, which is deliberate: a public demo has no sign-in, so it must not be able to spend your Anthropic credits.
 
-Now click **Deploy**. Vercel gives you a URL like `https://vekters.vercel.app`.
+Click **Deploy** once the first two are in. Vercel gives you a URL like `https://vekters.vercel.app`. Opening it will say "Not set up yet" until the Google pair is added, which is expected.
 
 ## 3. Tell Google about the new address
 
-Sign-in will fail until you do this.
+Do this as part of step 4 of `SETUP.md`, so you only configure the OAuth client once. Sign-in fails until it's done.
 
 1. Google Cloud Console → **Google Auth Platform → Clients** → your web client.
 2. Under **Authorized JavaScript origins**, add `https://vekters.vercel.app`.
 3. Under **Authorized redirect URIs**, add `https://vekters.vercel.app/api/auth/callback/google`.
 
-Use your real Vercel URL, with no trailing slash. Keep the `localhost:3000` entries so local development still works.
+Use your real Vercel URL, with no trailing slash. Add the `localhost:3000` entries too, so local development keeps working:
+
+```
+http://localhost:3000
+http://localhost:3000/api/auth/callback/google
+```
+
+Then add `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` to Vercel and redeploy (**Deployments → ⋯ → Redeploy**).
 
 ## 4. Let your teammates in
 
