@@ -128,7 +128,13 @@ Drag to reschedule or resize, Tasks, a tablet layout with a collapsible sidebar.
 - `.env.local` — secrets (never committed). See `.env.local.example` and `SETUP.md`.
 
 ## Demo mode
-On automatically when `AUTH_GOOGLE_ID` or `AUTH_GOOGLE_SECRET` is empty, or when `DEMO_MODE=true`. Skips sign-in and shows sample data. Events confirmed from the chat are kept in server memory and disappear on restart. Never deploy with demo mode on: the chat endpoint has no sign-in then.
+Sample data, no sign-in. Events confirmed from the chat live in server memory and vanish on restart.
+
+**It can't switch itself on in production.** In development it turns on when the Google keys are missing; in production you have to set `DEMO_MODE=true` by name. Otherwise a deployment with no keys would become an open demo whose assistant has no sign-in gate, and anyone with the link could spend the Anthropic credits.
+
+Even when it is asked for in production, `/api/chat` and `/api/import` refuse with a 403. A deployed demo is a shop window: it shows the calendar, it cannot spend money.
+
+With no Google credentials at all, the pages render `NotConfigured` instead of a sign-in button that cannot work.
 
 ## AI chat status (Milestone 3) — complete
 - Tools: `find_events` (read-only), `create_event`, `update_event`, `cancel_event`. Each write tool only produces a confirmation card; `confirmProposal` is the only code that writes.
@@ -277,3 +283,10 @@ Six changes, after reading the panel as a student would:
 - **Waiting looks alive.** Three pulsing dots, and after eight seconds it says so, because a motionless "Thinking…" for twenty seconds reads as broken.
 - **New chat** clears the conversation. The server keeps nothing between messages, so clearing the browser's copy is the whole job.
 - **The empty state says what it can do** — add, move, rename, cancel, answer — rather than only showing two examples, and the examples now cover a change, a cancellation and a question.
+
+## Deploying
+`DEPLOY.md` has the steps. Things to keep in mind when changing code:
+
+- **Functions are capped at 60 seconds on Vercel's free plan**, which is why `maxDuration` is 60 in both API routes rather than the 120 and 300 they started at. Chat takes 10 to 20 seconds and a season import about 15, so there is headroom, but don't raise those numbers without checking the plan.
+- **Requests are capped at 4.5 MB**, which is why uploads are limited to 4 MB.
+- The production redirect URI (`https://<app>.vercel.app/api/auth/callback/google`) has to be added to the Google OAuth client alongside the localhost one, or sign-in fails on the deployed site only.

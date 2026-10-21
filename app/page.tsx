@@ -13,6 +13,7 @@ import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { DeleteConfirm, EventForm } from "@/components/event-dialog";
 import { EventPanel } from "@/components/event-panel";
 import { Landing } from "@/components/landing";
+import { NotConfigured } from "@/components/sign-in-screen";
 import { MobileDay } from "@/components/mobile-day";
 import { MonthGrid } from "@/components/month-grid";
 import { Notice } from "@/components/notice";
@@ -73,8 +74,9 @@ export default async function CalendarPage({ searchParams }: PageProps<"/">) {
     return { firstDay: first, lastDay: addDays(first, 6) };
   });
 
-  // Not signed in: show the front door rather than a bare sign-in box.
-  if (data.status === "signed-out") return <Landing />;
+  // Not signed in: show the front door rather than a bare sign-in box. With no
+  // credentials at all, say so instead of offering a button that can't work.
+  if (data.status === "signed-out") return data.notConfigured ? <NotConfigured /> : <Landing />;
 
   if (data.status === "error") {
     return (

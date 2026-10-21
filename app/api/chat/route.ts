@@ -4,11 +4,12 @@
 
 import { runChat } from "@/lib/ai/chat";
 import { aiErrorResponse } from "@/lib/ai/errors";
-import { getSource, isSignedOut } from "@/lib/calendar-data";
+import { getSource, isDemoMode, isSignedOut } from "@/lib/calendar-data";
 import { readSavedTags } from "@/lib/tags";
 
-// Claude may think and call tools a few times, so allow up to 2 minutes.
-export const maxDuration = 120;
+// Claude may think and call tools a few times. 60s is Vercel's Hobby ceiling;
+// observed replies take 10 to 20 seconds.
+export const maxDuration = 60;
 
 // What the calendar is showing. Comes from the browser, so it's checked.
 type Viewing = { date: string; view: "day" | "week" | "month" };
@@ -43,7 +44,12 @@ export async function POST(request: Request) {
     return Response.json({ error: "Bad request." }, { status: 400 });
   }
 
-  // 2. Make sure the user is signed in (always true in demo mode).
+  // 2. A deployed demo has no sign-in, so it must not be able to spend money.
+  if (isDemoMode() && process.env.NODE_ENV === "production") {
+    return Response.json({ error: "Sign in to use the assistant." }, { status: 403 });
+  }
+
+  // 3. Make sure the user is signed in (always true in demo mode).
   let source;
   try {
     source = await getSource();

@@ -7,7 +7,7 @@ import { saveSettings, setCalendarColor, setCalendarTag } from "@/app/actions";
 import { AppHeader } from "@/components/app-header";
 import { Notice } from "@/components/notice";
 import { SetupWarnings } from "@/components/setup-warnings";
-import { SignInScreen } from "@/components/sign-in-screen";
+import { NotConfigured, SignInScreen } from "@/components/sign-in-screen";
 import { loadCalendars } from "@/lib/calendar-data";
 import {
   ACCENTS,
@@ -22,7 +22,8 @@ import { readSavedTags, TAG_LABELS, TAGS, tagsForCalendars, type Tag } from "@/l
 
 export default async function SettingsPage() {
   const data = await loadCalendars();
-  if (data.status === "signed-out") return <SignInScreen expired={data.expired} />;
+  if (data.status === "signed-out")
+    return data.notConfigured ? <NotConfigured /> : <SignInScreen expired={data.expired} />;
 
   const header = <AppHeader mode={data.mode} userName={data.userName} link={{ href: "/", label: "Week" }} />;
 

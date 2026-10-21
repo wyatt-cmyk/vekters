@@ -5,14 +5,15 @@ import { AppHeader } from "@/components/app-header";
 import { ImportFlow } from "@/components/import-flow";
 import { Notice } from "@/components/notice";
 import { SetupWarnings } from "@/components/setup-warnings";
-import { SignInScreen } from "@/components/sign-in-screen";
+import { NotConfigured, SignInScreen } from "@/components/sign-in-screen";
 import { loadCalendars } from "@/lib/calendar-data";
 import { canWrite } from "@/lib/google-calendar";
 import { readSavedTags, tagsForCalendars } from "@/lib/tags";
 
 export default async function ImportPage() {
   const data = await loadCalendars();
-  if (data.status === "signed-out") return <SignInScreen expired={data.expired} />;
+  if (data.status === "signed-out")
+    return data.notConfigured ? <NotConfigured /> : <SignInScreen expired={data.expired} />;
 
   const header = <AppHeader mode={data.mode} userName={data.userName} link={{ href: "/", label: "Week" }} />;
 

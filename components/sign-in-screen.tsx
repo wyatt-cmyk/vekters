@@ -39,3 +39,21 @@ export function SignInScreen({ expired }: { expired: boolean }) {
     </main>
   );
 }
+
+// Shown when the deployment has no Google credentials at all. Without this the
+// sign-in button simply fails, which looks like a bug rather than a setting.
+export function NotConfigured() {
+  return (
+    <main className="flex flex-1 items-center justify-center px-6 py-16">
+      <div className="w-full max-w-lg">
+        <h1 className="font-display text-4xl tracking-[-0.01em]">Not set up yet</h1>
+        <p className="mt-4 text-muted">
+          This copy of Vekters has no Google credentials, so there&apos;s nothing to sign in to. Whoever deployed it
+          needs to set <code>AUTH_GOOGLE_ID</code>, <code>AUTH_GOOGLE_SECRET</code> and <code>AUTH_SECRET</code>, then
+          redeploy.
+        </p>
+        <p className="mt-3 text-sm text-muted">The steps are in SETUP.md and DEPLOY.md in the repository.</p>
+      </div>
+    </main>
+  );
+}

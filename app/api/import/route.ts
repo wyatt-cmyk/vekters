@@ -4,11 +4,13 @@
 
 import { aiErrorResponse } from "@/lib/ai/errors";
 import { extractSchedule, ImportError, type ScheduleInput } from "@/lib/ai/import";
-import { getSource, isSignedOut } from "@/lib/calendar-data";
+import { getSource, isDemoMode, isSignedOut } from "@/lib/calendar-data";
 import { readSavedTags } from "@/lib/tags";
 
-// Reading a long schedule can take a while.
-export const maxDuration = 300;
+// Reading a long schedule takes a while. 60s is Vercel's Hobby ceiling; a
+// season takes about 15 seconds. A very long one may need the Pro plan, which
+// allows 300.
+export const maxDuration = 60;
 
 const MAX_FILE_BYTES = 4 * 1024 * 1024; // 4 MB (Vercel rejects requests over 4.5 MB)
 const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"] as const;
@@ -40,7 +42,12 @@ export async function POST(request: Request) {
     return Response.json({ error: "Paste a schedule or choose a file first." }, { status: 400 });
   }
 
-  // 2. Make sure the user is signed in (always true in demo mode).
+  // 2. A deployed demo has no sign-in, so it must not be able to spend money.
+  if (isDemoMode() && process.env.NODE_ENV === "production") {
+    return Response.json({ error: "Sign in to use the importer." }, { status: 403 });
+  }
+
+  // 3. Make sure the user is signed in (always true in demo mode).
   let source;
   try {
     source = await getSource();

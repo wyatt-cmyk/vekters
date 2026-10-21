@@ -28,9 +28,19 @@ import {
 import { cancelledTitle, proposalDescription, proposalTimes, snapshotOf, type EventProposal, type EventSnapshot } from "./proposals";
 import { addDays, eventDays, fetchRange, isDayKey, startOfWeek, todayIn, type DayKey } from "./week";
 
-// Demo mode is on when the Google keys are missing, or when DEMO_MODE=true.
+export const googleConfigured = () => Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET);
+
+// Demo mode fills the app with sample data and skips sign-in.
+//
+// It must never switch itself on in production. A deployed site with no
+// Google keys would otherwise become an open demo whose assistant has no
+// sign-in gate, so anyone with the link could spend the Anthropic credits.
+// In production you have to ask for it by name, and even then the AI
+// endpoints refuse (see app/api/chat/route.ts).
 export function isDemoMode() {
-  return process.env.DEMO_MODE === "true" || !process.env.AUTH_GOOGLE_ID || !process.env.AUTH_GOOGLE_SECRET;
+  if (process.env.DEMO_MODE === "true") return true;
+  if (process.env.NODE_ENV === "production") return false;
+  return !googleConfigured();
 }
 
 type Mode = "demo" | "google";
@@ -45,12 +55,19 @@ export type Source = {
   missingScopes: string[]; // permissions the student didn't grant on Google's screen
 };
 
-export type SignedOut = { status: "signed-out"; expired: boolean };
+// `notConfigured` means the deployment has no Google credentials at all, so
+// there is nothing to sign in to. Worth saying plainly rather than letting the
+// sign-in button fail.
+export type SignedOut = { status: "signed-out"; expired: boolean; notConfigured?: boolean };
 
 // Returns the data source, or SignedOut. Throws if Google returns an error.
 export async function getSource(): Promise<Source | SignedOut> {
   if (isDemoMode()) {
     return { mode: "demo", timeZone: DEMO_TIME_ZONE, calendars: DEMO_CALENDARS, userName: "Demo student", missingScopes: [] };
+  }
+
+  if (!googleConfigured()) {
+    return { status: "signed-out", expired: false, notConfigured: true };
   }
 
   const session = await auth();
