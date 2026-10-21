@@ -5,6 +5,9 @@
 // Downside: tags are per-browser (your phone and Chromebook each keep their own).
 // Calendars you haven't tagged get a best guess from their name.
 
+// Reads cookies, so it can only ever run on the server.
+import "server-only";
+
 import { cookies } from "next/headers";
 import type { Calendar } from "./google-calendar";
 

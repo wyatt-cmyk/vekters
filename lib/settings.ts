@@ -7,6 +7,9 @@
 // later only means changing `readSettings` and `writeSettings` below; nothing
 // else in the app touches storage.
 
+// Reads cookies, so it can only ever run on the server.
+import "server-only";
+
 import { cookies } from "next/headers";
 import type { Tag } from "./tags";
 
