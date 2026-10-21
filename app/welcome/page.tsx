@@ -3,7 +3,7 @@
 import { Landing } from "@/components/landing";
 
 export const metadata = {
-  title: "Athlete Calendar — school and sports in one week",
+  title: "Vekters — school and sports in one week",
   description: "Classes, practices and games in one calendar. Paste your coach's text and it becomes an event.",
 };
 

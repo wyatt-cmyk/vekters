@@ -148,5 +148,5 @@ export function proposalTimes(p: EventProposal, timeZone: string): { start: Even
 }
 
 export function proposalDescription(p: EventProposal) {
-  return [p.notes.trim(), "Added with Athlete Calendar"].filter(Boolean).join("\n\n");
+  return [p.notes.trim(), "Added with Vekters"].filter(Boolean).join("\n\n");
 }

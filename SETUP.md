@@ -7,7 +7,7 @@ Until you do, the app runs in **demo mode**: it skips sign-in and shows sample e
 ## 1. Create a Google Cloud project
 1. Go to https://console.cloud.google.com and sign in with your Google account.
 2. Click the project dropdown at the top → **New Project**.
-3. Name it `Athlete Calendar` → **Create**. Make sure it's selected in the dropdown.
+3. Name it `Vekters` → **Create**. Make sure it's selected in the dropdown.
 
 ## 2. Turn on the Calendar API
 1. Left menu → **APIs & Services → Library**.
@@ -15,7 +15,7 @@ Until you do, the app runs in **demo mode**: it skips sign-in and shows sample e
 
 ## 3. Set up the OAuth consent screen (testing mode)
 Google now calls this **Google Auth Platform**. Left menu → **Google Auth Platform** (or **APIs & Services → OAuth consent screen**).
-1. **Get started** → App name `Athlete Calendar`, support email = your email.
+1. **Get started** → App name `Vekters`, support email = your email.
 2. Audience: **External**. (Testing mode is the default for new apps; you'll see "Publishing status: Testing".)
 3. Contact email = your email → agree → **Create**.
 4. Left tab **Audience → Test users → Add users**: add your own Gmail, plus any teammates who'll test. Only these accounts can sign in while the app is in testing mode.
@@ -30,7 +30,7 @@ Google now calls this **Google Auth Platform**. Left menu → **Google Auth Plat
 
 ## 4. Create the OAuth client (this gives you the ID and secret)
 1. Left tab **Clients** (or **APIs & Services → Credentials → Create credentials → OAuth client ID**).
-2. Application type: **Web application**. Name: `Athlete Calendar (local)`.
+2. Application type: **Web application**. Name: `Vekters (local)`.
 3. **Authorized JavaScript origins**: `http://localhost:3000`
 4. **Authorized redirect URIs**: `http://localhost:3000/api/auth/callback/google`
    (This exact path is where Auth.js receives the login. Any typo here causes a `redirect_uri_mismatch` error.)
@@ -58,7 +58,7 @@ Open http://localhost:3000 → **Sign in with Google**.
 The chat works in demo mode too, but it needs this key either way.
 1. Go to https://platform.claude.com and sign in or create an account. The old console.anthropic.com address redirects there.
 2. Add credits under **Billing**. The smallest amount is five dollars. The app uses Claude Sonnet 5.5, which costs roughly one to three cents per chat message and four to ten cents per schedule import. Set a monthly spend limit under **Limits** first, so there are no surprises.
-3. Go to **API keys → Create key**. Name it `Athlete Calendar (local)` and copy it. You only see it once.
+3. Go to **API keys → Create key**. Name it `Vekters (local)` and copy it. You only see it once.
 4. Paste it into `.env.local`:
    ```
    ANTHROPIC_API_KEY=sk-ant-...

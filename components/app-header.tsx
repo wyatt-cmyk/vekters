@@ -1,5 +1,6 @@
 // Top bar shared by every page: the wordmark, a link to the other page, and
 // either Sign out (real Google data) or a Demo marker.
+import Image from "next/image";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { signOut } from "@/auth";
@@ -13,8 +14,8 @@ type Props = {
 export function AppHeader({ mode, userName, link }: Props) {
   return (
     <header className="flex flex-wrap items-center gap-4 border-b border-line bg-surface px-6 py-3">
-      <Link href="/" className="font-display text-xl font-semibold tracking-tight">
-        Athlete Calendar
+      <Link href="/" aria-label="Vekters">
+        <Image src="/brand/vekters-wordmark.png" alt="Vekters" width={943} height={178} className="h-[20px] w-auto" />
       </Link>
 
       <div className="ml-auto flex items-center gap-3">

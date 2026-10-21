@@ -186,11 +186,11 @@ Each person picks their own colour, week start, clock format, and a colour per c
 ### Where settings live, and the limit
 In a cookie, like the calendar tags. Each person gets their own, because nobody shares a browser profile, but **they do not follow you between devices**: set them again on your phone. Fixing that needs a database keyed by the Google account id. When that happens, only `readSettings` and `writeSettings` in `lib/settings.ts` change; nothing else in the app touches storage.
 
-## The landing page is a different design language on purpose
-`components/landing.tsx` is the front door: editorial, huge type, lots of air, scroll animation. The app itself stays dense and quiet, because one is read once and the other is used every day. Don't push the landing page's scale into the week view.
+## The landing page: same materials, different scale
+`components/landing.tsx` is the front door. It uses exactly the Vekters materials — the tokens, Geist, Instrument Serif, the five pastels — but at a scale the app never uses: huge type, a lot of air, scroll animation. One is read once; the other is used every day. **Don't push the landing page's scale into the week view.**
 
-- Type: **Geist** for the big sans headings (loaded inside `landing.tsx`, so the app's own pages don't carry a font they never use), with Fraunces italic used sparingly for editorial contrast.
-- Palette: warm paper #F5F5F0, ink #171717, soft grey #EAEAE6, hairline #E2E2DC, and the app's clay #B8482A as the one accent. Muted text is #6A6A66, not the #777 the brief suggested, because #777 fails contrast on this background.
+- It loads no fonts and defines no colours of its own. Everything comes from `globals.css`, so the page can't drift from the app.
+- Type: Geist for the big headings, Instrument Serif italic for one line per section.
 - Layout: 12-column grid used asymmetrically. Nothing is a centred three-card row.
 - Motion is pure CSS scroll-driven animation (`.reveal`, `.nav-settle` in `globals.css`). Content is visible by default, so nothing depends on JavaScript, on scroll-timeline support, or on ignoring `prefers-reduced-motion`.
 - Copy carries no invented numbers or testimonials. If a real figure is ever wanted, put it in as a placeholder rather than making one up.
