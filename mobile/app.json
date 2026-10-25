@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Vekters",
+    "slug": "vekters",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "vekters",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.weihs.vekters",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.weihs.vekters",
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": [
+      "expo-web-browser"
+    ],
+    "extra": {
+      "webBaseUrl": "https://vekters.vercel.app"
+    }
+  }
+}
