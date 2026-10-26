@@ -195,89 +195,54 @@ function Moments() {
 
 /* ---------- the week, full bleed ---------- */
 
-// The same five pastels the app uses, from lib/settings.ts.
-const BLUE = { bg: "#dce7f5", edge: "#6f8fbf61" };
-const GREEN = { bg: "#dfebdd", edge: "#7a9f7261" };
-const LAVENDER = { bg: "#e8e3f3", edge: "#8c7dbe61" };
-
-const MOCK_DAYS = [
-  {
-    day: "MON",
-    n: "19",
-    events: [
-      { c: BLUE, t: "Biology lab report", w: "All day" },
-      { c: GREEN, t: "Practice", w: "3:30 – 5:30" },
-    ],
-  },
-  {
-    day: "TUE",
-    n: "20",
-    today: true,
-    events: [
-      { c: BLUE, t: "English essay draft", w: "8:00 AM" },
-      { c: GREEN, t: "Practice", w: "3:30 – 5:30" },
-    ],
-  },
-  { day: "WED", n: "21", events: [{ c: GREEN, t: "Game vs. Lincoln", w: "6 – 8 PM" }] },
-  {
-    day: "THU",
-    n: "22",
-    events: [
-      { c: BLUE, t: "History unit 2 test", w: "9 – 10 AM" },
-      { c: GREEN, t: "Recovery practice", w: "4:30 – 6:00" },
-    ],
-  },
-  {
-    day: "FRI",
-    n: "23",
-    events: [
-      { c: GREEN, t: "Bus departs", w: "2:45 PM" },
-      { c: GREEN, t: "Game @ Westview", w: "4 – 6 PM" },
-    ],
-  },
-  { day: "SAT", n: "24", events: [{ c: GREEN, t: "Film session", w: "10 – 11 AM" }] },
-  { day: "SUN", n: "25", events: [{ c: LAVENDER, t: "Study group", w: "3 – 5 PM" }] },
-];
-
 function WeekShowcase() {
   return (
     <section className="reveal overflow-hidden bg-nav-active px-6 py-20 lg:px-10 lg:py-28">
       <div className="mx-auto max-w-[1400px]">
         <p className="mb-10 text-[11px] font-medium uppercase tracking-[0.14em] text-muted">One week, both lives</p>
 
-        {/* A still of the real week view. Seven columns can't shrink to a phone,
-            so on a narrow screen it scrolls sideways inside its own box. */}
-        <div className="-mx-6 overflow-x-auto px-6 lg:mx-0 lg:px-0">
-          <div
-            className="grid min-w-[760px] grid-cols-7 gap-2 rounded-card border border-line bg-surface p-4 lg:min-w-0 lg:gap-3 lg:p-6"
-            aria-hidden="true"
-          >
-            {MOCK_DAYS.map((d) => (
-              <div key={d.n} className="flex flex-col gap-2">
-                <div className="flex items-center gap-1.5 px-0.5 pb-1">
-                  <span className="text-[9px] font-semibold tracking-[0.12em] text-muted">{d.day}</span>
-                  {d.today ? (
-                    <span className="nums grid h-[22px] min-w-[22px] place-items-center rounded-full bg-ink px-1.5 text-[13px] text-white">
-                      {d.n}
-                    </span>
-                  ) : (
-                    <span className="nums text-[15px]">{d.n}</span>
-                  )}
-                </div>
-                {d.events.map((e) => (
-                  <div
-                    key={e.t}
-                    className="rounded-event border px-2 py-1.5"
-                    style={{ backgroundColor: e.c.bg, borderColor: e.c.edge }}
-                  >
-                    <p className="text-[11px] font-medium leading-tight">{e.t}</p>
-                    <p className="nums text-[9.5px] text-on-event">{e.w}</p>
-                  </div>
-                ))}
-              </div>
-            ))}
+        {/* Real screenshots of the app, not a drawing of it. Captured in demo
+            mode on purpose: the sample calendar is invented, so no student's
+            actual assignments or practice times end up on a public page.
+            Re-shoot them from `/?view=…` in demo mode if the design changes. */}
+        <div className="grid gap-5 lg:grid-cols-[1fr_280px] lg:items-start lg:gap-6">
+          <div className="overflow-hidden rounded-card border border-line bg-surface">
+            <Image
+              src="/shots/week.jpg"
+              alt="The week view: school and sports side by side on an hour grid, with the assistant in the right-hand panel."
+              width={1372}
+              height={889}
+              className="h-auto w-full"
+              sizes="(min-width: 1024px) 70vw, 100vw"
+            />
+          </div>
+
+          {/* The phone shot is its own column on a wide screen and drops below
+              on a narrow one, where a 390px image beside anything is silly. */}
+          <div className="mx-auto w-full max-w-[280px] overflow-hidden rounded-card border border-line bg-surface lg:mx-0">
+            <Image
+              src="/shots/phone.png"
+              alt="The same week on a phone: a strip of days, then the chosen day as a list."
+              width={390}
+              height={756}
+              className="h-auto w-full"
+              sizes="280px"
+            />
           </div>
         </div>
+
+        <div className="mt-5 overflow-hidden rounded-card border border-line bg-surface">
+          <Image
+            src="/shots/month.jpg"
+            alt="The month view: six rows of seven days, each day listing its events."
+            width={1372}
+            height={889}
+            className="h-auto w-full"
+            sizes="(min-width: 1024px) 90vw, 100vw"
+          />
+        </div>
+
+        <p className="mt-4 text-sm text-muted">Week, month and phone. The same calendar, shown three ways.</p>
       </div>
     </section>
   );
