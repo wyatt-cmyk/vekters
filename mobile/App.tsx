@@ -32,11 +32,23 @@ import type {
 
 const FALLBACK_URL = 'https://vekters.vercel.app';
 
-// The URL lives in app.json under expo.extra.webBaseUrl, following the same
-// convention the user's other Expo app uses for its web base URL. Changing the
-// site this points at is a config edit, not a code edit.
+// Which site to load, in order of preference:
+//
+//   1. EXPO_PUBLIC_WEB_URL, so you can point the phone at the laptop's dev
+//      server without editing a file -- e.g.
+//      EXPO_PUBLIC_WEB_URL=http://192.168.1.82:3000 npx expo start
+//      The phone is a different machine, so "localhost" would mean the phone
+//      itself. It needs the laptop's address on the wifi.
+//   2. app.json's expo.extra.webBaseUrl, the committed default.
+//   3. Production, as a last resort.
+//
+// Anything prefixed EXPO_PUBLIC_ is baked into the JavaScript bundle and is
+// readable by anyone with the app, so this must never hold a secret. A URL is
+// fine; a key would not be.
 const SITE_URL: string =
-  (Constants.expoConfig?.extra as { webBaseUrl?: string } | undefined)?.webBaseUrl ?? FALLBACK_URL;
+  process.env.EXPO_PUBLIC_WEB_URL ||
+  (Constants.expoConfig?.extra as { webBaseUrl?: string } | undefined)?.webBaseUrl ||
+  FALLBACK_URL;
 
 type ParsedUrl = { scheme: string; hostname: string; path: string };
 
